@@ -113,3 +113,9 @@ A abertura valida a malha e os pesos antes de substituir o trabalho atual. Proje
 **Proteger osso selecionado** mantém seus pesos durante a pintura de outros ossos. **Suavizar** aproxima a influência do osso da média dos vértices vizinhos conectados. **Espelhar pintura** troca também o osso esquerdo/direito; exige correspondência simétrica na mesma malha. Ctrl/⌘ Z no modo pintura desfaz a pincelada.
 
 O deploy executa testes numéricos, três round trips GLB com proporções distintas e a suíte completa de navegador antes de publicar. A avaliação e os limites estão em [docs/mvp.md](docs/mvp.md).
+
+### Controle global e edição por região
+
+Na etapa Animação, selecione **Controle global** na árvore ou no painel de articulações para posicionar/girar todo o personagem. Esse controle é o grupo do personagem, separado dos 19 ossos e dos pesos. Sua posição e rotação são salvas nos keyframes, no projeto e na exportação GLB.
+
+No modo Mover, coxa, coluna e outros segmentos proximais orientam sua própria cadeia, preservando comprimentos e sem girar o quadril compartilhado. Joelho e cotovelo mantêm a resposta articulada; mover o quadril reajusta as pernas para tentar manter os pés apoiados dentro do alcance. Use Rotação/FK para controlar diretamente o ângulo de cada articulação.

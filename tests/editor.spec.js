@@ -105,3 +105,21 @@ test('MVP playhead drag scrubs without moving keyframes',async({page})=>{
  expect(Number(await page.locator('#playhead-handle').getAttribute('aria-valuenow'))).toBeGreaterThan(2);await page.mouse.up();
  expect(await page.locator('.key').evaluateAll(nodes=>nodes.map(n=>n.style.left))).toEqual(keys);
 });
+
+test('global placement is separate from anatomy and survives keys, undo and project reload',async({page},testInfo)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/',{waitUntil:'domcontentloaded'});await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);
+ await page.locator('#ik-mode').click();
+ const before=await page.evaluate(()=>window.riglabDiagnostics().pose);
+ for(const index of ['11','1']){
+  await page.locator('#joint-select').selectOption(index);await page.locator('#axis-z').fill('0.2');await page.locator('#axis-z').press('Tab');
+  const after=await page.evaluate(()=>window.riglabDiagnostics().pose);expect(after[0]).toEqual(before[0]);expect(after[Number(index)].q).not.toEqual(before[Number(index)].q);await page.locator('#undo').click();
+ }
+ await page.locator('#global-control').click();await page.locator('#add-key').click();await page.locator('#playhead-handle').press('End');
+ await page.locator('#axis-x').fill('0.6');await page.locator('#axis-x').press('Tab');
+ let d=await page.evaluate(()=>window.riglabDiagnostics());expect(d.pose).toEqual(before);expect(d.global.p[0]).toBeCloseTo(.6);
+ await page.locator('#undo').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).global.p[0]).toBe(0);await page.locator('#redo').click();await page.locator('#add-key').click();
+ await page.locator('#playhead-handle').press('Home');expect((await page.evaluate(()=>window.riglabDiagnostics())).global.p[0]).toBe(0);
+ await page.locator('#playhead-handle').press('End');expect((await page.evaluate(()=>window.riglabDiagnostics())).global.p[0]).toBeCloseTo(.6);
+ const saving=page.waitForEvent('download');await page.locator('#save-project').click();const file=testInfo.outputPath('global.riglab');await(await saving).saveAs(file);await page.locator('#demo').click();await page.locator('#project-file').setInputFiles(file);await page.waitForFunction(()=>window.riglabDiagnostics().rigged);d=await page.evaluate(()=>window.riglabDiagnostics());expect(d.global.p[0]).toBeCloseTo(.6);expect(d.pose).toEqual(before);
+ const exporting=page.waitForEvent('download');await page.locator('#export').click();const glb=testInfo.outputPath('global.glb');await(await exporting).saveAs(glb);const bytes=await fs.readFile(glb);const json=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString());const root=json.nodes.findIndex(n=>n.name==='RigLab_Character');expect(root).toBeGreaterThanOrEqual(0);expect(json.skins[0].joints).toHaveLength(19);expect(json.animations[0].channels.some(c=>c.target.node===root&&c.target.path==='translation')).toBe(true);expect(errors).toEqual([]);
+});

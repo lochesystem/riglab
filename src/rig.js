@@ -125,10 +125,17 @@ export function moveBoneWorld(skeleton,index,target){
    return;
  }
  if(index!==0&&bone.parent?.isBone){
-   // Interior controls propagate through their parent by rotation. Descendants
-   // follow naturally; this does not stretch the offset from the parent.
-   aimChild(root,bone.parent,bone,target);return;
+   // Proximal controls bend their own segment, never the common pelvis parent.
+   const child=bone.children.find(b=>b.isBone);
+   if(child){
+     const delta=target.clone().sub(bone.getWorldPosition(new THREE.Vector3()));
+     aimChild(root,bone,child,child.getWorldPosition(new THREE.Vector3()).add(delta));
+   }else aimChild(root,bone.parent,bone,target);
+   return;
  }
+ // Pelvis is an anatomical control: retain foot support while shifting weight.
+ const anchors=[12,16].map(i=>({i,knee:bones[i].getWorldPosition(new THREE.Vector3()),foot:bones[i+1].getWorldPosition(new THREE.Vector3())}));
  bone.parent?.updateWorldMatrix(true,false);
  bone.position.copy(bone.parent?bone.parent.worldToLocal(target.clone()):target);root.updateMatrixWorld(true);
+ for(const a of anchors)solveMiddle(skeleton,a.i,a.knee,a.foot);
 }
