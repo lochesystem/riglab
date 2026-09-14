@@ -1,0 +1,9 @@
+node_modules/
+dist/
+test-results/
+*.log
+playwright-report/
+.DS_Store
+.env
+.env.*
+public/references/*.png
