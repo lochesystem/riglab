@@ -109,35 +109,41 @@ export function generateIdle(points,{intensity=1,speed=1}={}){
  });
 }
 
-// Contact lasts less than half a cycle: phases .36-.5 and .86-1 are
-// unsupported. Hermite swing matches stance velocity at both boundaries.
+// Contact -> toe-off -> heel recovery -> knee drive -> next contact.
+// Explicit Hermite arcs bound the backswing instead of allowing an oversized
+// tangent to pull the foot far behind the body and collapse the pelvis via IK.
+function runCurve(t,nodes){
+ let i=0;while(i<nodes.length-2&&t>nodes[i+1][0])i++;
+ const [a,p,m]=nodes[i],[b,q,n]=nodes[i+1],span=b-a,u=(t-a)/span;
+ return (2*u**3-3*u**2+1)*p+(u**3-2*u**2+u)*span*m+(-2*u**3+3*u**2)*q+(u**3-u**2)*span*n;
+}
 export function runFootTrajectory(phase,length,stride=.55){
- const t=((phase%1)+1)%1,contact=.36,halfStep=stride*length*.5;
- const stance=t<contact,u=stance?t/contact:(t-contact)/(1-contact),tangent=-2*halfStep*(1-contact)/contact;
- const z=stance?halfStep*(1-2*u):-halfStep+tangent*u+(2*halfStep-tangent)*smooth(u);
- // Early recovery lifts the heel behind the body before the knee drives forward.
- const arc=stance?0:Math.sin(Math.PI*u)**2*(1+.8*Math.sin(TAU*u));
- const lift=length*.30*arc;
- const pitch=stance?-.08*(1-smooth(t/.09))+.32*smooth((t-.2)/.16):.32-.40*smooth(u);
- return {z,lift,pitch,stance};
+ const t=((phase%1)+1)%1,contact=.36,halfStep=stride*length*.5,velocity=-2*halfStep/contact;
+ const stance=t<contact;
+ const z=stance?halfStep+velocity*t:runCurve(t,[[.36,-halfStep,velocity],[.51,-halfStep*1.20,0],[.72,halfStep*.10,halfStep*5],[.87,halfStep*1.20,0],[1,halfStep,velocity]]);
+ const lift=stance?0:length*runCurve(t,[[.36,0,0],[.54,.48,0],[.72,.37,-1.6],[.88,.12,-1.3],[1,0,0]]);
+ const pitch=stance?-.06*(1-smooth(t/.10))+.38*smooth((t-.22)/.14):runCurve(t,[[.36,.38,0],[.54,.65,0],[.75,.10,-2],[.9,-.06,0],[1,-.06,0]]);
+ return {z,lift:Math.max(0,lift),pitch,stance};
 }
 export function generateRun(points,{speed=1,stride=.55,intensity=1}={}){
  speed=finite(speed,1,.7,1.4);stride=finite(stride,.55,.35,.72);intensity=finite(intensity,1,.4,1.5);
  const rig=createMotionRig(points),{bones:b,length:L,feet,footTarget,arm}=rig;
  return bake(rig,.8/speed,'Running',phase=>{
   const t=TAU*phase;
-  b[0].position.y+=L*(-.045-.073*Math.cos(2*t-.72*Math.PI));
-  b[0].position.x+=L*.019*intensity*Math.sin(t-.15);
-  b[0].rotation.set(.11+.035*intensity,-.08*intensity*Math.cos(t),.025*intensity*Math.sin(t-.25));
-  b[1].rotation.set(.025,.035*intensity*Math.cos(t-.12),-.015*intensity*Math.sin(t-.25));
-  b[2].rotation.set(.018*intensity*Math.sin(2*t-.6),.105*intensity*Math.cos(t-.2),-.018*intensity*Math.sin(t-.4));
+  // Compression follows contact; maximum height occurs during flight.
+  b[0].position.y+=L*(-.025-.040*Math.cos(2*t-.56*Math.PI));
+  b[0].position.x+=L*.005*intensity*Math.sin(t);
+  b[0].rotation.set(.14+.02*intensity,-.035*intensity*Math.cos(t),.007*intensity*Math.sin(t));
+  b[1].rotation.set(.018,.012*intensity*Math.cos(t),-.004*intensity*Math.sin(t));
+  b[2].rotation.set(.006*Math.sin(2*t),.050*intensity*Math.cos(t),-.005*intensity*Math.sin(t));
   b[3].rotation.x=-.04;
-  b[4].rotation.set(-.10-.035*intensity-.014*Math.sin(2*t-.85),-.03*intensity*Math.cos(t-.35),.008*intensity*Math.sin(t-.55));
+  b[4].rotation.set(-.11-.02*intensity-.006*Math.sin(2*t),-.015*intensity*Math.cos(t),0);
   feet([11,15].map((index,side)=>{const m=runFootTrajectory(phase+side*.5,L,stride);return footTarget(index,m.z,m.lift,m.pitch);}));
   for(const [index,sign,offset] of [[5,1,0],[8,-1,Math.PI]]){
-   const swing=(.40+.13*intensity)*Math.cos(t+offset-.18);
-   const flex=1.25+.17*Math.cos(t+offset-.5);
-   arm(index,sign,swing,flex,.06*intensity*Math.sin(t+offset-.65),.10);
+   // Humerus swings in the sagittal plane, opposite the ipsilateral leg.
+   const swing=(.48+.10*intensity)*Math.cos(t+offset-.08);
+   const flex=1.50+.10*Math.cos(t+offset-.25);
+   arm(index,sign,swing,flex,.025*Math.sin(t+offset-.3),.065);
   }
  });
 }

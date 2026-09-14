@@ -35,3 +35,11 @@ Ciclo base de 0,8 s, no lugar. Cada pé apoia durante 36% do ciclo; pernas defas
 - Separar problema de movimento de problema de skinning: pesos por proximidade ainda podem pinçar ombros e quadril. Uma boa trajetória não corrige uma malha mal vinculada.
 
 Implementação: `src/motion.js`; caminhada anterior: `src/walk.js`; controles manuais: `src/rig.js`. As escolhas acima devem orientar novos ciclos e refinamentos.
+
+## Revisão da corrida — referência de poses fornecida pelo usuário
+
+A versão anterior combinava oscilação lateral/torção ampla com retorno dos pés por uma única curva com tangente de apoio longa. A revisão usa arcos Hermite por etapas: contato, saída do apoio, recuperação do calcanhar, avanço do joelho e retorno ao contato. As tangentes são contínuas e a excursão para trás fica limitada para evitar que a compensação de alcance do IK derrube excessivamente o quadril.
+
+O deslocamento lateral da pelve caiu de 1,9% para 0,5% do comprimento da perna; sua oscilação vertical autorada caiu de 7,3% para 4%. A torção do tronco ficou mais discreta. Cotovelos permanecem em torno de 90°, com braços próximos ao corpo e opostos à perna do mesmo lado. A recuperação do calcanhar tem arco mais alto, mantendo contato alternado e fase aérea. A duração e o formato dos clipes são compatíveis; clipes existentes precisam ser gerados novamente para receber a nova coreografia.
+
+Verificação: poses de contato/voo inspecionadas no navegador de perfil, testes de continuidade nas junções, ausência de cruzamento de fase dos braços, excursão lateral limitada, preservação dos ossos e exportação. A referência orienta a coreografia; não foi convertida em captura de movimento.

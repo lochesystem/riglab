@@ -44,3 +44,19 @@ test('waiting idle looks around, rests a hand on the hip and returns without a l
  poseAt(15.9);assert.ok(rig.bones[7].getWorldPosition(new THREE.Vector3()).distanceTo(initialHand)<.02);
  for(let i=0;i<19;i++)assert.ok(new THREE.Quaternion(...keys.at(-2).pose[i].q).angleTo(new THREE.Quaternion(...keys[0].pose[i].q))<.02);
 });
+
+test('run stays in a forward plane with compact hips, folded recovery and opposing arms',()=>{
+ for(const type of ['A','T'])for(const width of [.7,1.3]){
+  const points=defaultMarkers(2,type,width),rig=buildSkeleton(points),{keys}=generateRun(points),xs=keys.map(k=>k.pose[0].p[0]);
+  assert.ok(Math.max(...xs)-Math.min(...xs)<.012,'pelvis should not sway like a dance');
+  for(const k of keys){applyPose(rig,k.pose);for(const [arm,forearm,hand] of [[5,6,7],[8,9,10]]){
+   const a=rig.bones[arm].getWorldPosition(new THREE.Vector3()),b=rig.bones[forearm].getWorldPosition(new THREE.Vector3()),c=rig.bones[hand].getWorldPosition(new THREE.Vector3());
+   const flex=b.clone().sub(a).angleTo(c.clone().sub(b));assert.ok(flex>1.3&&flex<1.7,'elbows should stay near 90 degrees');
+  }}
+  applyPose(rig,keys[0].pose);const foot=rig.bones[13].getWorldPosition(new THREE.Vector3()),hip=rig.bones[11].getWorldPosition(new THREE.Vector3()),elbow=rig.bones[6].getWorldPosition(new THREE.Vector3()),shoulder=rig.bones[5].getWorldPosition(new THREE.Vector3());
+  assert.ok((foot.z-hip.z)*(elbow.z-shoulder.z)<0,'same-side arm and leg should oppose');rig.dispose();
+ }
+ const samples=Array.from({length:1001},(_,i)=>runFootTrajectory(i/1000,1));
+ assert.ok(Math.max(...samples.map(m=>m.lift))>.45,'heel needs a clear recovery arc');assert.ok(Math.max(...samples.map(m=>Math.abs(m.z)))<.4,'avoid excessive backswing that collapses root height');
+ for(const t of [.51,.54,.72,.75,.87,.88,.9]){const h=1e-6,a=runFootTrajectory(t-h,1),b=runFootTrajectory(t,1),c=runFootTrajectory(t+h,1);for(const key of ['z','lift','pitch'])assert.ok(Math.abs((b[key]-a[key])/h-(c[key]-b[key])/h)<.005,`${key} should stay smooth at ${t}`);}
+});
