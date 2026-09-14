@@ -86,3 +86,22 @@ test('idle and running generate, preview, export and restore editable motion',as
  const expPromise=page.waitForEvent('download');await page.locator('#export').click();const exp=await expPromise;const expPath=testInfo.outputPath('running.glb');await exp.saveAs(expPath);const buffer=await fs.readFile(expPath);const json=JSON.parse(buffer.subarray(20,20+buffer.readUInt32LE(12)).toString());expect(json.animations[0].channels.length).toBe(38);
  const savePromise=page.waitForEvent('download');await page.locator('#save-project').click();const save=await savePromise;const saved=testInfo.outputPath('running.riglab');await save.saveAs(saved);await page.locator('#demo').click();await page.locator('#project-file').setInputFiles(saved);await page.waitForFunction(()=>window.riglabDiagnostics().keyframes===25);expect(errors).toEqual([]);
 });
+
+test('MVP recovery restores clip after reload and malformed weights keep the current project',async({page},testInfo)=>{
+ await page.goto('/');await page.locator('#auto-rig').click();await page.locator('#wave').click();
+ await expect(page.locator('#status')).toHaveText('● Salvo neste navegador',{timeout:20000});
+ await page.reload();await expect(page.locator('#recovery-banner')).toBeVisible();await page.locator('#restore-recovery').click();
+ await expect(page.locator('#key-count')).toHaveText('5 poses');await expect(page.locator('#recovery-banner')).toBeHidden();
+ const savePromise=page.waitForEvent('download');await page.locator('#save-project').click();const saved=await savePromise;const path=testInfo.outputPath('recovered.riglab');await saved.saveAs(path);const project=JSON.parse(await fs.readFile(path,'utf8'));
+ const before=await page.evaluate(()=>window.riglabDiagnostics().pose);project.weights[0].weights[0]=-1;
+ await page.locator('#project-file').setInputFiles({name:'invalid-weights.riglab',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
+ await expect(page.locator('#toast')).toContainText('Pesos inválidos');expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(before);await expect(page.locator('#key-count')).toHaveText('5 poses');
+});
+
+test('MVP playhead drag scrubs without moving keyframes',async({page})=>{
+ await page.goto('/');await page.locator('#auto-rig').click();await page.locator('#wave').click();
+ const keys=await page.locator('.key').evaluateAll(nodes=>nodes.map(n=>n.style.left)),handle=await page.locator('#playhead-handle').boundingBox(),ruler=await page.locator('#ruler').boundingBox();
+ await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);await page.mouse.down();await page.mouse.move(ruler.x+ruler.width*.7,handle.y+handle.height/2,{steps:12});
+ expect(Number(await page.locator('#playhead-handle').getAttribute('aria-valuenow'))).toBeGreaterThan(2);await page.mouse.up();
+ expect(await page.locator('.key').evaluateAll(nodes=>nodes.map(n=>n.style.left))).toEqual(keys);
+});

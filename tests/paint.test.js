@@ -22,3 +22,15 @@ test('repeated removal reaches zero and reduces actual arm deformation',async()=
  const rest=new THREE.Vector3(1,1,0),after=mesh.getVertexPosition(0,new THREE.Vector3());assert.ok(before.distanceTo(rest)>1);assert.ok(after.distanceTo(rest)<1e-6);
  geometry.dispose();mesh.material.dispose();mesh.skeleton.dispose();
 });
+
+test('painting preserves protected bone weights and respects four slots',()=>{
+ const result=paintInfluences([1,2,3,4],[.4,.3,.2,.1],5,.8,0,new Set([1,2]));
+ assert.equal(result.weights[result.indices.indexOf(1)],.4);assert.equal(result.weights[result.indices.indexOf(2)],.3);
+ assert.ok(Math.abs(result.weights.reduce((a,b)=>a+b)-1)<1e-8);assert.equal(result.indices.length,4);
+ assert.deepEqual(paintInfluences([1,2,3,4],[.4,.3,.2,.1],1,-.4,0,new Set([1])),{indices:[1,2,3,4],weights:[.4,.3,.2,.1]});
+});
+test('topology smooths only connected vertices and mirrors bilateral positions',async()=>{
+ const {paintTopology}=await import('../src/paint.js');
+ const t=paintTopology(new Float32Array([1,0,0,1,1,0,0,0,0,-1,0,0,-1,1,0]),new Uint16Array([0,1,2,3,4,2]));
+ assert.deepEqual([...t.neighbors[0]],[1,2]);assert.deepEqual(t.mirror[0],[3]);assert.deepEqual(t.mirror[3],[0]);assert.ok(!t.neighbors[0].has(4));
+});

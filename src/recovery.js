@@ -1,0 +1,4 @@
+const DB='riglab-recovery';
+function connect(){return new Promise((resolve,reject)=>{const request=indexedDB.open(DB,1);request.onupgradeneeded=()=>request.result.createObjectStore('projects');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
+export async function readRecovery(){const db=await connect();try{return await new Promise((resolve,reject)=>{const tx=db.transaction('projects'),r=tx.objectStore('projects').get('latest');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}finally{db.close();}}
+export async function writeRecovery(project){const db=await connect();try{await new Promise((resolve,reject)=>{const tx=db.transaction('projects','readwrite');tx.objectStore('projects').put({project,savedAt:Date.now()},'latest');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Gravação cancelada'));});}finally{db.close();}}

@@ -30,16 +30,16 @@ Use **Importar modelo GLB** ou arraste um `.glb` para a cena. O arquivo deve ser
 
 A proposta inicial de esqueleto usa proporções humanoides padrão. Não há reconhecimento por IA da anatomia. A qualidade depende do alinhamento manual das juntas, da pose, topologia e separação dos membros.
 
-As cinco imagens conceituais estão na biblioteca de referências. São PNGs, não modelos 3D; a conversão imagem → GLB acontece fora deste protótipo.
+As cinco imagens conceituais estão na biblioteca de referências. São imagens de referência, não modelos 3D; a conversão imagem → GLB acontece fora deste protótipo.
 
 ## Limites conhecidos
 
-- Pesos por distância a segmentos de ossos, com até quatro influências normalizadas. Não é um solver volumétrico; ombros, roupas largas e membros próximos podem deformar mal. Ainda não há pintura de pesos.
-- IK CCD simples para braços e pernas, sem limites anatômicos, controle de cotovelo/joelho, colisões ou contato automático com o chão. Alvos fora do alcance não esticam o esqueleto.
+- Pesos por distância a segmentos de ossos, com até quatro influências normalizadas. Não é um solver volumétrico; ombros, roupas largas e membros próximos podem deformar mal. Há pintura manual, suavização, proteção de ossos e espelhamento para vértices simétricos.
+- IK CCD simples para braços e pernas, sem limites anatômicos rígidos ou colisões; os controles de cotovelo/joelho acompanham as cadeias. Alvos fora do alcance não esticam o esqueleto.
 - Sem dedos individuais, face, cabelos/roupas com física, retargeting ou mistura de vários clipes.
 - Apenas GLB estático autocontido. Malhas já rigadas, morph targets, instâncias, Draco e texturas KTX2 não são suportados nesta versão. GLBs exportados podem ser usados em visualizadores e editores externos; para continuar no RigLab, use o `.riglab`.
 - Gerar novamente o rig substitui os pesos e limpa o clipe e o histórico. O aviso aparece ao reajustar o esqueleto. Alterações de juntas exigem regeneração antes de voltar a animar.
-- Undo/redo guarda 40 edições de poses, marcadores e timeline. Importar outra malha, reorientá-la ou regenerar o rig reinicia o histórico. Não há salvamento automático; baixe o projeto antes de fechar ou trocar de modelo.
+- Undo/redo guarda 40 edições de poses, marcadores e timeline. Importar outra malha, reorientá-la ou regenerar o rig reinicia o histórico. A cópia automática local ocorre a cada 5 segundos após edições, enquanto o editor está parado. Baixe também o projeto para manter um backup independente.
 - Interface projetada para desktop, com largura mínima de 900 px e WebGL. A interface usa fontes locais e não depende de carregamento de fontes externas.
 
 ## Verificação
@@ -94,7 +94,7 @@ Após gerar o rig, ative **Pesos** nos controles do viewport. Selecione uma arti
 
 Na etapa Animação, abra **Pintura de pesos → Pintar pesos**. Selecione o osso na lista, ajuste raio e intensidade e arraste com o botão esquerdo sobre a malha. Use **Adicionar** ou **Remover**; Shift inverte a operação. O botão direito orbita a câmera. Desative Pintar pesos para voltar a posar.
 
-O pincel tem queda suave até a borda, acumula influência enquanto o botão fica pressionado, inclusive ao passar novamente pelo mesmo vértice e mantém até quatro influências normalizadas. **Desfazer pincelada** recupera até oito pinceladas, independentemente do histórico de poses. Os pesos são preservados no projeto .riglab e no GLB exportado. Recalcular pesos ou gerar um novo rig substitui a pintura e limpa seu histórico. O raio usa a escala normalizada do editor (personagem com 2 m de altura). Esta primeira versão pinta a malha atingida, com um limite de profundidade; superfícies muito próximas na mesma malha podem receber influência. Ainda não inclui suavização entre vizinhos, espelhamento ou bloqueio de ossos.
+O pincel tem queda suave até a borda, acumula influência enquanto o botão fica pressionado, inclusive ao passar novamente pelo mesmo vértice e mantém até quatro influências normalizadas. **Desfazer pincelada** recupera até oito pinceladas, independentemente do histórico de poses. Os pesos são preservados no projeto .riglab e no GLB exportado. Recalcular pesos ou gerar um novo rig substitui a pintura e limpa seu histórico. O raio usa a escala normalizada do editor (personagem com 2 m de altura). Esta primeira versão pinta a malha atingida, com um limite de profundidade; superfícies muito próximas na mesma malha podem receber influência. Inclui Suavizar entre vizinhos da topologia, proteção dos pesos de ossos selecionados e espelhamento exato entre vértices simétricos da mesma malha. O filtro Somente superfície visível testa oclusão; pode custar mais em malhas densas.
 
 O cursor circular mostra o raio projetado na superfície e acompanha o zoom: verde para adicionar, coral para remover. Segure o botão para acumular o efeito; intensidade maior remove mais rapidamente. Em malhas low-poly, use um raio que alcance os vértices da região: as cores dentro de cada face são interpoladas entre seus vértices.
 
@@ -103,3 +103,13 @@ O cursor circular mostra o raio projetado na superfície e acompanha o zoom: ver
 Site: https://lochesystem.github.io/riglab/
 
 Cada push em `main` executa os testes, gera o build e publica via GitHub Actions no Pages. O workflow usa Node.js 22. Localmente: `npm ci` e `npm run dev`. O build no GitHub usa a base `/riglab/`, incluindo as referências e o worker de pesos. Os modelos importados continuam sendo processados no navegador.
+
+## Consolidação do MVP
+
+A cópia automática usa IndexedDB neste navegador e endereço. Ao retornar, **Recuperar projeto** restaura modelo, pesos, rig, pose e keyframes. O projeto anterior não é sobrescrito enquanto a escolha estiver pendente. **Continuar neste projeto** libera novas cópias após a próxima edição. O indicador inferior confirma a gravação; se faltar espaço ou armazenamento estiver bloqueado, use **Salvar** para baixar o arquivo. Alterações dos últimos cinco segundos podem não ter sido gravadas; não há sincronização entre dispositivos. Evite editar simultaneamente o mesmo projeto em várias abas.
+
+A abertura valida a malha e os pesos antes de substituir o trabalho atual. Projetos antigos sem pesos explícitos continuam calculando o rig ao abrir; projetos pintados usam os pesos salvos diretamente.
+
+**Proteger osso selecionado** mantém seus pesos durante a pintura de outros ossos. **Suavizar** aproxima a influência do osso da média dos vértices vizinhos conectados. **Espelhar pintura** troca também o osso esquerdo/direito; exige correspondência simétrica na mesma malha. Ctrl/⌘ Z no modo pintura desfaz a pincelada.
+
+O deploy executa testes numéricos, três round trips GLB com proporções distintas e a suíte completa de navegador antes de publicar. A avaliação e os limites estão em [docs/mvp.md](docs/mvp.md).
