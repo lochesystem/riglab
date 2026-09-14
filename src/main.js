@@ -191,7 +191,8 @@ function updateUI(){
  $$('[data-stage]').forEach(b=>{b.classList.toggle('active',b.dataset.stage===state.stage);b.disabled=state.busy||(b.dataset.stage==='animate'&&(!state.rigged||rigNeedsRebuild()));});
  $('#import-panel').classList.toggle('hidden',state.stage!=='import');$('#rig-panel').classList.toggle('hidden',state.stage!=='rig');$('#pose-panel').classList.toggle('hidden',state.stage!=='animate');
  const titles={import:['01 / PREPARAÇÃO','Tudo começa aqui.','Prepare seu personagem para ganhar vida.','MODELO ORIGINAL'],rig:['02 / RIGGING ASSISTIDO','Dê estrutura à ideia.','Um esqueleto simples. Infinitas poses.','AJUSTE DO ESQUELETO'],animate:['03 / ANIMAÇÃO','Encontre o movimento.','Uma pose de cada vez.','EDIÇÃO DE ANIMAÇÃO']};const t=titles[state.stage];$('#inspector-kicker').textContent=t[0];$('#inspector-title').textContent=t[1];$('#inspector-description').textContent=t[2];$('#view-state').textContent=t[3];
- $('#hint').textContent=state.stage==='rig'?'Ajuste as articulações e gere o rig para começar':state.stage==='import'?'GLB em pose A ou T · corpo inteiro · até 200 mil vértices':'Pose o personagem → escolha o tempo → adicione um keyframe';
+ $('#hint').classList.toggle('hidden',state.stage==='animate');
+ $('#hint').textContent=state.stage==='rig'?'Ajuste as articulações e gere o rig para começar':state.stage==='import'?'GLB em pose A ou T · corpo inteiro · até 200 mil vértices':'';
  $('#export').disabled=state.busy||!state.rigged||state.stage!=='animate';$('#save-project').disabled=state.busy;
  for(const id of ['play','rewind','add-key','copy-key','paste-key','delete-key'])$(`#${id}`).disabled=state.busy||state.stage!=='animate'||(id==='play'&&!state.keys.length)||(id==='paste-key'&&!clipboard)||(id==='delete-key'&&!state.keys.some(k=>Math.abs(k.time-state.time)<.02));
  $('#undo').disabled=!history.length||state.busy;$('#redo').disabled=!future.length||state.busy;
