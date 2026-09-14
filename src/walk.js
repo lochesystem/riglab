@@ -32,7 +32,7 @@ export function generateWalk(points,{speed=1,stride=.28}={}) {
     // Lower at double support, rise over the supporting leg. The small lateral
     // shift follows support, while pelvis and chest counter-rotate.
     const support=Math.sin(theta);
-    bones[0].position.y-=length*(.022+.010*Math.cos(theta*2));
+    bones[0].position.y-=length*(.008+.006*Math.cos(theta*2));
     bones[0].position.x+=length*.018*support;
     bones[0].rotation.set(.055,-.035*Math.cos(theta),-.014*support);
     bones[1].rotation.set(.006,.012*Math.cos(theta),.009*support);
