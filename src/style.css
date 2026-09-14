@@ -7,3 +7,5 @@
 .weight-legend{position:absolute;left:80px;bottom:82px;width:250px;padding:12px 14px;border:1px solid #59675b;border-radius:10px;background:#202829ed;pointer-events:none;font-size:12px;z-index:2}.weight-legend strong{display:block;margin-bottom:9px;color:#e5eedf}.weight-gradient{height:10px;border-radius:5px;background:linear-gradient(90deg,#142d70,#00b8e0,#35ce69,#ffe34b,#f23832)}.weight-scale{display:flex;justify-content:space-between;margin:6px 0;color:#e0e7df}.weight-legend small{color:#a7b5aa}
 
 .brush-cursor{position:absolute;pointer-events:none;z-index:4;transform:translate(-50%,-50%);border:2px solid #e2ff85;border-radius:50%;box-shadow:0 0 0 1px #15201c, inset 0 0 0 1px #15201c;background:#e2ff850a}.brush-cursor.removing{border-color:#ff927e;background:#ff927e0a}.brush-cursor[hidden]{display:none}
+
+#playhead-handle{position:absolute;left:-10px;top:-12px;width:21px;height:23px;pointer-events:auto;cursor:ew-resize;touch-action:none;z-index:6;border-radius:4px}#playhead-handle:focus-visible{outline:2px solid #e2ff85;background:#d1f48520}.ruler,.key-track{touch-action:none}
