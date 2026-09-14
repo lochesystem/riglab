@@ -15,7 +15,7 @@ test('demo rig, pose, IK, keyframes, save/reopen and real GLB skin/animation exp
  await page.locator('#neutral').click();await page.locator('#ik-mode').click();await page.locator('#joint-select').selectOption('7');await page.locator('#axis-z').fill('0.2');await page.locator('#axis-z').press('Tab');
  expect((await page.evaluate(()=>window.riglabDiagnostics().joint))[2]).toBeGreaterThan(.15);
  await page.locator('#wave').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(5);
- await page.locator('#play').click();await page.waitForTimeout(500);expect((await page.evaluate(()=>window.riglabDiagnostics())).time).toBeGreaterThan(.1);await page.locator('#play').click();
+ await page.locator('#play').click();await expect.poll(async()=> (await page.evaluate(()=>window.riglabDiagnostics())).time,{timeout:10000}).toBeGreaterThan(.1);await page.locator('#play').click();
  await page.screenshot({path:testInfo.outputPath('02-animation-editor.png')});
  const downloadPromise=page.waitForEvent('download');await page.locator('#export').click();const download=await downloadPromise;const glbPath=testInfo.outputPath('character.glb');await download.saveAs(glbPath);
  const buffer=await fs.readFile(glbPath);expect(buffer.readUInt32LE(0)).toBe(0x46546c67);const len=buffer.readUInt32LE(12);const json=JSON.parse(buffer.subarray(20,20+len).toString());expect(json.skins.length).toBeGreaterThan(0);expect(json.skins[0].joints.length).toBe(19);expect(json.animations[0].channels.length).toBe(38);expect(json.meshes[0].primitives[0].attributes.WEIGHTS_0).toBeDefined();
