@@ -60,3 +60,15 @@ test('run stays in a forward plane with compact hips, folded recovery and opposi
  assert.ok(Math.max(...samples.map(m=>m.lift))>.45,'heel needs a clear recovery arc');assert.ok(Math.max(...samples.map(m=>Math.abs(m.z)))<.4,'avoid excessive backswing that collapses root height');
  for(const t of [.51,.54,.72,.75,.87,.88,.9]){const h=1e-6,a=runFootTrajectory(t-h,1),b=runFootTrajectory(t,1),c=runFootTrajectory(t+h,1);for(const key of ['z','lift','pitch'])assert.ok(Math.abs((b[key]-a[key])/h-(c[key]-b[key])/h)<.005,`${key} should stay smooth at ${t}`);}
 });
+
+test('running narrows foot tracks independently of bind stance and coordinates torso counter-rotation',()=>{
+ for(const width of [.7,1,1.4]){
+  const points=defaultMarkers(2,'A',width),rig=buildSkeleton(points),result=generateRun(points,{intensity:1.4});
+  const L=points[11].distanceTo(points[12])+points[12].distanceTo(points[13]);
+  for(const k of result.keys){applyPose(rig,k.pose);const left=rig.bones[13].getWorldPosition(new THREE.Vector3()),right=rig.bones[17].getWorldPosition(new THREE.Vector3());
+   assert.ok(left.x>points[0].x&&right.x<points[0].x,'feet must not cross center');assert.ok(left.x-right.x<=L*.15+1e-6,'running track must be narrower than bind stance');
+   for(const [hip,knee] of [[11,12],[15,16]]){const h=rig.bones[hip].getWorldPosition(new THREE.Vector3()),n=rig.bones[knee].getWorldPosition(new THREE.Vector3());assert.ok(Math.abs(n.x-points[0].x)<=Math.abs(h.x-points[0].x)+.025,'knees should not fan outward');}
+  }
+  applyPose(rig,result.keys[0].pose);const hipYaw=new THREE.Euler().setFromQuaternion(rig.bones[0].getWorldQuaternion(new THREE.Quaternion())).y,torsoYaw=new THREE.Euler().setFromQuaternion(rig.bones[2].getWorldQuaternion(new THREE.Quaternion())).y;assert.ok(hipYaw*torsoYaw<0,'pelvis and chest counter-rotate');rig.dispose();
+ }
+});

@@ -43,3 +43,11 @@ A versão anterior combinava oscilação lateral/torção ampla com retorno dos 
 O deslocamento lateral da pelve caiu de 1,9% para 0,5% do comprimento da perna; sua oscilação vertical autorada caiu de 7,3% para 4%. A torção do tronco ficou mais discreta. Cotovelos permanecem em torno de 90°, com braços próximos ao corpo e opostos à perna do mesmo lado. A recuperação do calcanhar tem arco mais alto, mantendo contato alternado e fase aérea. A duração e o formato dos clipes são compatíveis; clipes existentes precisam ser gerados novamente para receber a nova coreografia.
 
 Verificação: poses de contato/voo inspecionadas no navegador de perfil, testes de continuidade nas junções, ausência de cruzamento de fase dos braços, excursão lateral limitada, preservação dos ossos e exportação. A referência orienta a coreografia; não foi convertida em captura de movimento.
+
+## Corrida: largura de apoio e postura integrada
+
+A pose de referência não define mais a largura da passada: os tornozelos percorrem faixas próximas ao centro (cada lado entre 4,5% e 7,5% do comprimento da perna), preservando a largura original do quadril e o comprimento dos ossos. Um plano de flexão estável orienta as pernas e direciona os joelhos para frente com leve convergência, evitando abertura lateral herdada do rig.
+
+A inclinação anterior da pelve/corpo aumentou, com compensação no pescoço/cabeça. Quadril e peito contrarrotacionam e têm inclinações laterais discretas coordenadas; a orientação dos braços agora usa o referencial do peito em vez de permanecer fixa no mundo. A recuperação da perna tem joelho mais alto e uma subida distribuída por mais tempo para evitar trancos.
+
+Conferido no demonstrador de frente e perfil. Testes percorrem três larguras de rig e verificam faixas estreitas sem cruzamento da linha central, ausência de abertura excessiva dos joelhos, oposição de quadril/peito, integridade e continuidade do ciclo. Os projetos existentes mantêm o rig e os pesos; é preciso gerar o clipe novamente.

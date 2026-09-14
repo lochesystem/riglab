@@ -17,6 +17,12 @@ function createMotionRig(points){
   bones[index].quaternion.setFromUnitVectors(new THREE.Vector3(...rest[child].p).normalize(),direction.clone().normalize().applyQuaternion(inv));
   bones[0].updateMatrixWorld(true);
  }
+ function aimInPlane(index,child,direction,right){
+  const frame=(down,side)=>{const up=down.clone().normalize().negate(),x=side.clone().addScaledVector(up,-side.dot(up)).normalize(),z=new THREE.Vector3().crossVectors(x,up).normalize();return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,up,z));};
+  const reference=frame(new THREE.Vector3(...rest[child].p),X);
+  const world=frame(direction,right).multiply(reference.invert());
+  bones[index].quaternion.copy(bones[index].parent.getWorldQuaternion(new THREE.Quaternion()).invert()).multiply(world);bones[0].updateMatrixWorld(true);
+ }
  function feet(targets){
   bones[0].updateMatrixWorld(true);let rootY=bones[0].position.y;
   targets.forEach(({index,position},side)=>{
@@ -24,14 +30,16 @@ function createMotionRig(points){
    rootY=Math.min(rootY,position.y+Math.sqrt(Math.max(0,(lengths[side]*.998)**2-horizontal))-(hip.y-bones[0].position.y));
   });
   bones[0].position.y=rootY;bones[0].updateMatrixWorld(true);
-  for(const {index,position,pitch=0} of targets){
+  for(const {index,position,pitch=0,kneePole} of targets){
    const hip=bones[index].getWorldPosition(new THREE.Vector3()),a=new THREE.Vector3(...rest[index+1].p).length(),b=new THREE.Vector3(...rest[index+2].p).length();
    const direction=position.clone().sub(hip),distance=THREE.MathUtils.clamp(direction.length(),Math.abs(a-b)+1e-5,a+b-1e-5);direction.normalize();
    const along=(a*a-b*b+distance*distance)/(2*distance),radius=Math.sqrt(Math.max(0,a*a-along*along));
-   const pole=new THREE.Vector3(0,0,1).addScaledVector(direction,-direction.z).normalize();
+   const pole=(kneePole||new THREE.Vector3(0,0,1)).clone();pole.addScaledVector(direction,-pole.dot(direction)).normalize();
    const knee=hip.clone().addScaledVector(direction,along).addScaledVector(pole,radius);
-   aim(index,index+1,knee.sub(hip));
-   aim(index+1,index+2,position.clone().sub(bones[index+1].getWorldPosition(new THREE.Vector3())));
+   const right=new THREE.Vector3().crossVectors(pole,direction).normalize();
+   if(kneePole)aimInPlane(index,index+1,knee.sub(hip),right);else aim(index,index+1,knee.sub(hip));
+   const shinDirection=position.clone().sub(bones[index+1].getWorldPosition(new THREE.Vector3()));
+   if(kneePole)aimInPlane(index+1,index+2,shinDirection,right);else aim(index+1,index+2,shinDirection);
    bones[index+2].quaternion.copy(bones[index+2].parent.getWorldQuaternion(new THREE.Quaternion()).invert()).multiply(new THREE.Quaternion().setFromAxisAngle(X,pitch));
    bones[0].updateMatrixWorld(true);
   }
@@ -41,9 +49,9 @@ function createMotionRig(points){
   position.z+=z+toe.z-rolled.z;position.y+=lift+Math.max(0,toe.y-rolled.y);
   return {index,position,pitch};
  }
- function arm(index,sign,swing,flex,wrist=0,spread=.12){
+ function arm(index,sign,swing,flex,wrist=0,spread=.12,frame=null){
   const direction=new THREE.Vector3(sign*spread,-1,0).normalize().applyAxisAngle(X,swing);
-  aim(index,index+1,direction);aim(index+1,index+2,direction.clone().applyAxisAngle(X,-flex));
+  const lower=direction.clone().applyAxisAngle(X,-flex);if(frame){direction.applyQuaternion(frame);lower.applyQuaternion(frame);}aim(index,index+1,direction);aim(index+1,index+2,lower);
   bones[index+2].rotation.set(wrist,0,sign*.035);
  }
  function handOnHip(index,sign,weight){
@@ -121,7 +129,7 @@ export function runFootTrajectory(phase,length,stride=.55){
  const t=((phase%1)+1)%1,contact=.36,halfStep=stride*length*.5,velocity=-2*halfStep/contact;
  const stance=t<contact;
  const z=stance?halfStep+velocity*t:runCurve(t,[[.36,-halfStep,velocity],[.51,-halfStep*1.20,0],[.72,halfStep*.10,halfStep*5],[.87,halfStep*1.20,0],[1,halfStep,velocity]]);
- const lift=stance?0:length*runCurve(t,[[.36,0,0],[.54,.48,0],[.72,.37,-1.6],[.88,.12,-1.3],[1,0,0]]);
+ const lift=stance?0:length*runCurve(t,[[.36,0,0],[.58,.50,0],[.74,.44,-1.4],[.88,.12,-1.3],[1,0,0]]);
  const pitch=stance?-.06*(1-smooth(t/.10))+.38*smooth((t-.22)/.14):runCurve(t,[[.36,.38,0],[.54,.65,0],[.75,.10,-2],[.9,-.06,0],[1,-.06,0]]);
  return {z,lift:Math.max(0,lift),pitch,stance};
 }
@@ -133,17 +141,24 @@ export function generateRun(points,{speed=1,stride=.55,intensity=1}={}){
   // Compression follows contact; maximum height occurs during flight.
   b[0].position.y+=L*(-.025-.040*Math.cos(2*t-.56*Math.PI));
   b[0].position.x+=L*.005*intensity*Math.sin(t);
-  b[0].rotation.set(.14+.02*intensity,-.035*intensity*Math.cos(t),.007*intensity*Math.sin(t));
-  b[1].rotation.set(.018,.012*intensity*Math.cos(t),-.004*intensity*Math.sin(t));
-  b[2].rotation.set(.006*Math.sin(2*t),.050*intensity*Math.cos(t),-.005*intensity*Math.sin(t));
+  b[0].rotation.set(.19+.025*intensity,-.055*intensity*Math.cos(t),-.018*intensity*Math.cos(t));
+  b[1].rotation.set(.012,.020*intensity*Math.cos(t),.010*intensity*Math.cos(t));
+  b[2].rotation.set(.006*Math.sin(2*t),.105*intensity*Math.cos(t-.10),.014*intensity*Math.cos(t-.10));
   b[3].rotation.x=-.04;
-  b[4].rotation.set(-.11-.02*intensity-.006*Math.sin(2*t),-.015*intensity*Math.cos(t),0);
-  feet([11,15].map((index,side)=>{const m=runFootTrajectory(phase+side*.5,L,stride);return footTarget(index,m.z,m.lift,m.pitch);}));
+  b[4].rotation.set(-.16-.025*intensity-.006*Math.sin(2*t),-.015*intensity*Math.cos(t),0);
+  const halfTrack=THREE.MathUtils.clamp(Math.abs(points[11].x-points[15].x)*.17,L*.045,L*.075);
+  feet([11,15].map((index,side)=>{
+   const m=runFootTrajectory(phase+side*.5,L,stride),target=footTarget(index,m.z,m.lift,m.pitch),sign=side===0?1:-1;
+   target.position.x=points[0].x+sign*halfTrack;
+   target.kneePole=new THREE.Vector3(-sign*.12,0,1);
+   return target;
+  }));
+  const shoulderFrame=b[2].getWorldQuaternion(new THREE.Quaternion());
   for(const [index,sign,offset] of [[5,1,0],[8,-1,Math.PI]]){
    // Humerus swings in the sagittal plane, opposite the ipsilateral leg.
    const swing=(.48+.10*intensity)*Math.cos(t+offset-.08);
    const flex=1.50+.10*Math.cos(t+offset-.25);
-   arm(index,sign,swing,flex,.025*Math.sin(t+offset-.3),.065);
+   arm(index,sign,swing,flex,.025*Math.sin(t+offset-.3),.065,shoulderFrame);
   }
  });
 }
