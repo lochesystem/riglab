@@ -30,3 +30,32 @@ test('foot velocity stays continuous at toe-off and loop contact',()=>{
  for(const field of ['z','lift','pitch'])assert.ok(Math.abs((b[field]-a[field])/h-(c[field]-b[field])/h)<.002,field+' velocity jump');
  }
 });
+
+test('walk keeps narrow noncrossing tracks, forward knees and continuous supported steps across rigs',()=>{
+ for(const width of [.75,1,1.35])for(const stride of [.18,.4]){
+ const points=defaultMarkers(2,'A',width),skeleton=buildSkeleton(points),{keys}=generateWalk(points,{stride});
+ const L=points[11].distanceTo(points[12])+points[12].distanceTo(points[13]);
+ let previous=null,doubleSupport=0,singleSupport=0;
+ for(const k of keys){
+  applyPose(skeleton,k.pose);const pos=i=>skeleton.bones[i].getWorldPosition(new THREE.Vector3());let grounded=0;
+  for(const [hip,sign] of [[11,1],[15,-1]]){
+   const foot=pos(hip+2),knee=pos(hip+1),top=pos(hip),toe=pos(hip+3);
+   assert.ok(sign*(foot.x-points[0].x)>L*.04,'foot crossed center');
+   assert.ok(Math.abs(foot.x-points[0].x)<L*.11,'stance inherited bind spread');
+   assert.ok(sign*(knee.x-top.x)<L*.025,'knee opened laterally');
+   assert.ok(knee.z>Math.min(top.z,foot.z)-1e-5,'knee folded backwards');
+   const clearance=Math.min(foot.y-points[hip+2].y,toe.y-points[hip+3].y);
+   assert.ok(clearance>-1e-5,'foot penetrated floor');if(clearance<1e-5)grounded++;
+  }
+  assert.ok(grounded>=1,'walking must not have a flight phase');
+  if(grounded===2)doubleSupport++;else singleSupport++;
+  if(previous)for(const i of [0,1,2,5,6,8,9,11,12,15,16])assert.ok(new THREE.Quaternion(...k.pose[i].q).angleTo(new THREE.Quaternion(...previous.pose[i].q))<.5,'joint snapped between frames');
+  previous=k;
+ }
+ assert.ok(doubleSupport>0&&singleSupport>0);
+ applyPose(skeleton,keys[0].pose);
+ const yaw=i=>new THREE.Euler().setFromQuaternion(skeleton.bones[i].getWorldQuaternion(new THREE.Quaternion()),'YXZ').y;
+ assert.ok(yaw(0)*yaw(2)<0,'pelvis and chest must counter-rotate');
+ assert.ok(skeleton.bones[7].getWorldPosition(new THREE.Vector3()).z<skeleton.bones[10].getWorldPosition(new THREE.Vector3()).z,'arms must oppose legs');
+ }
+});

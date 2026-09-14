@@ -6,7 +6,7 @@ const finite=(value,fallback,min,max)=>THREE.MathUtils.clamp(Number.isFinite(Num
 
 // Shared constraints for authored procedural motion: forward knee pole, rigid
 // bone lengths, world-space feet and analytic IK (no frame-to-frame drift).
-function createMotionRig(points){
+export function createMotionRig(points){
  const skeleton=buildSkeleton(points),bones=skeleton.bones,rest=capturePose(skeleton);
  const lengths=[11,15].map(i=>points[i].distanceTo(points[i+1])+points[i+1].distanceTo(points[i+2]));
  const length=Math.min(...lengths);

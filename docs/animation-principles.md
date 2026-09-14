@@ -51,3 +51,11 @@ A pose de referência não define mais a largura da passada: os tornozelos perco
 A inclinação anterior da pelve/corpo aumentou, com compensação no pescoço/cabeça. Quadril e peito contrarrotacionam e têm inclinações laterais discretas coordenadas; a orientação dos braços agora usa o referencial do peito em vez de permanecer fixa no mundo. A recuperação da perna tem joelho mais alto e uma subida distribuída por mais tempo para evitar trancos.
 
 Conferido no demonstrador de frente e perfil. Testes percorrem três larguras de rig e verificam faixas estreitas sem cruzamento da linha central, ausência de abertura excessiva dos joelhos, oposição de quadril/peito, integridade e continuidade do ciclo. Os projetos existentes mantêm o rig e os pesos; é preciso gerar o clipe novamente.
+
+## Caminhada: apoio estreito e coordenação corporal
+
+A caminhada agora compartilha o solver de pernas da corrida: plano de flexão estável, joelhos voltados para frente e faixa de apoio independente da abertura da pose A/T. Cada pé permanece entre 6,5% e 10,5% do comprimento da perna em relação ao centro; a faixa é um pouco mais larga que na corrida. Os braços acompanham o referencial do peito, com balanço oposto à perna e flexão suave dos cotovelos.
+
+O quadril faz uma transferência lateral discreta para o lado de apoio, com contrarrotação de peito e compensação da cabeça. A caminhada mantém 60% de apoio por pé, intervalos de apoio duplo, elevação baixa dos pés e inclinação anterior moderada. O ciclo não tem fase aérea. Mantidas a continuidade das trajetórias, as durações e as opções de tamanho de passo.
+
+Verificação: demonstrador de frente e perfil em poses do ciclo; testes em três larguras de rig e dois comprimentos de passo, cobrindo apoio contínuo, ausência de cruzamento dos pés, direção dos joelhos, contrarrotação e ausência de saltos entre frames. Gere a caminhada novamente para aplicar as mudanças a um projeto existente.
