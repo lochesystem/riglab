@@ -130,7 +130,7 @@ Os pesos dos dedos são redistribuídos localmente a partir da mão e da influê
 
 ## Texturas e mapa UV
 
-O botão **Texturas e UV**, na barra esquerda, funciona antes ou depois do rigging. Selecione o material e o mapa (cor, normal, rugosidade etc.), confira a prévia e exporte a textura em PNG e as linhas UV em PNG transparente ou SVG. Os arquivos têm as dimensões da imagem original; a textura exportada não contém as linhas.
+O botão **Texturas e UV**, na barra esquerda, funciona antes ou depois do rigging. Selecione o material e o mapa (cor, normal, rugosidade etc.), confira a prévia e exporte a textura em PNG e os contornos das ilhas UV em PNG transparente ou SVG. Os arquivos têm as dimensões da imagem original; a textura exportada não contém as linhas.
 
 Edite a imagem externamente e use **Importar textura corrigida** para aplicar PNG, JPEG ou WebP ao material selecionado. A orientação, o canal UV e as transformações da textura são preservados. **Restaurar textura original** desfaz as substituições feitas nessa sessão. Salvar, recuperação automática e Exportar GLB incluem a imagem corrigida.
 
