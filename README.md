@@ -127,3 +127,11 @@ Em **Animação → Pose → Mãos · punhos**, clique em **Adicionar rig das m�
 A seção recolhida **Ajustar rig das mãos** permite enquadrar a mão e corrigir tamanho, orientação, posição da palma e proporções do polegar. Confira as linhas na mão aberta antes de fechar. O polegar faz oposição ao indicador; os demais dedos flexionam em três articulações. A estimativa usa a geometria próxima ao pulso, não reconhecimento anatômico. Dedos modelados e separados são necessários; mãos já dobradas, dedos unidos, luvas grossas ou marcadores deslocados exigem calibração e podem apresentar interpenetrações.
 
 Os pesos dos dedos são redistribuídos localmente a partir da mão e da influência residual do antebraço nas pontas. Não há recálculo dos pesos de ombros ou tronco. Adicionar ou ajustar o rig das mãos pode ser desfeito, incluindo os pesos. O projeto com mãos usa formato `.riglab` versão 2; versões antigas continuam abrindo com 19 ossos. Salvamento automático, keyframes e exportação GLB incluem os 49 ossos.
+
+## Texturas e mapa UV
+
+O botão **Texturas e UV**, na barra esquerda, funciona antes ou depois do rigging. Selecione o material e o mapa (cor, normal, rugosidade etc.), confira a prévia e exporte a textura em PNG e as linhas UV em PNG transparente ou SVG. Os arquivos têm as dimensões da imagem original; a textura exportada não contém as linhas.
+
+Edite a imagem externamente e use **Importar textura corrigida** para aplicar PNG, JPEG ou WebP ao material selecionado. A orientação, o canal UV e as transformações da textura são preservados. **Restaurar textura original** desfaz as substituições feitas nessa sessão. Salvar, recuperação automática e Exportar GLB incluem a imagem corrigida.
+
+O mapa UV existente é extraído, não recalculado. UVs coincidentes podem afetar várias faces; a ferramenta sinaliza triângulos inteiramente coincidentes, sem detectar toda sobreposição parcial. Para UVs fora de 0–1, exporta o tile principal recortado e informa a repetição. Malhas com apenas cores por vértice não possuem uma textura para extrair. O limite de importação de imagem é 30 MB/64 megapixels. Os PNGs preservam os pixels decodificados; não reproduzem o arquivo JPEG original byte a byte.
