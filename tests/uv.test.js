@@ -5,3 +5,6 @@ test('UV export respects material groups, texture channels and transforms',()=>{
 test('coincident UV triangles are reported without dropping their lines',()=>{const e=fixture();e.mesh.geometry.setIndex([0,1,2,2,1,0]);const layout=uvLayout(e);assert.equal(layout.overlaps,1);assert.equal(layout.triangles.length,2);assert.equal(layout.edges.length,3);});
 
 test('UV seams remain outlined across split vertices',()=>{const e=fixture(false),uv=e.mesh.geometry.attributes.uv;for(let i=3;i<6;i++)uv.setX(i,uv.getX(i)+2);assert.equal(uvLayout(e).edges.length,6);});
+
+import {islandPieces,packIslands} from '../src/uv-islands.js';
+test('islands join shared topology, preserve seams and pack without overlaps',()=>{const joined=uvLayout(fixture(false));assert.equal(joined.islands.length,1);const e=fixture(false);e.mesh.geometry.attributes.uv.setXY(3,.2,.2);const layout=uvLayout(e);assert.equal(layout.islands.length,2);const pieces=islandPieces(layout,64,32),packed=packIslands(pieces);assert.equal(packed.pieces.length,2);const [a,b]=packed.pieces;assert.ok(a.displayX+a.width<b.displayX||b.displayX+b.width<a.displayX||a.displayY+a.height<b.displayY||b.displayY+b.height<a.displayY);assert.deepEqual(pieces.map(p=>[p.x,p.y]),packed.pieces.sort((a,b)=>a.id-b.id).map(p=>[p.x,p.y]));});
