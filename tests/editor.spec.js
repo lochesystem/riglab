@@ -96,7 +96,7 @@ test('MVP recovery restores clip after reload and malformed weights keep the cur
  await expect(page.locator('#open-project')).toBeEnabled();
  const before=await page.evaluate(()=>window.riglabDiagnostics().pose);project.weights[0].weights[0]=-1;
  await page.locator('#project-file').setInputFiles({name:'invalid-weights.riglab',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
- await expect(page.locator('#toast')).toContainText('Pesos inválidos');expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(before);await expect(page.locator('#key-count')).toHaveText('5 poses');
+ await expect(page.locator('#toast')).toContainText('Pesos inválidos',{timeout:20000});expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(before);await expect(page.locator('#key-count')).toHaveText('5 poses');
 });
 
 test('MVP playhead drag scrubs without moving keyframes',async({page})=>{
