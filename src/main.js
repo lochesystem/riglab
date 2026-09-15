@@ -353,7 +353,7 @@ async function autosave(){
  if(recoveryPending||recoveryWriting||state.busy||state.playing||stroke||gizmo.dragging||revision===recoveryRevision)return;
  recoveryWriting=true;const currentAsset=asset,currentRevision=revision,projectState=snapshot(),weights=state.rigged?captureWeights():undefined,name=state.name,kind=sourceKind;
  try{
-  if(cachedRecoveryAsset!==currentAsset){cachedRecoveryGLB=toBase64(await new GLTFExporter().parseAsync(currentAsset,{binary:true}));cachedRecoveryAsset=currentAsset;}
+  if(cachedRecoveryAsset!==currentAsset){const encoded=toBase64(await new GLTFExporter().parseAsync(currentAsset,{binary:true}));if(currentAsset!==asset||revision!==currentRevision)return;cachedRecoveryGLB=encoded;cachedRecoveryAsset=currentAsset;}
   if(currentAsset!==asset||revision!==currentRevision)return;
   await writeRecovery({format:'riglab',version:state.handRig?2:1,name,sourceKind:kind,asset:cachedRecoveryGLB,weights,state:projectState});recoveryRevision=currentRevision;
   $('#status').textContent='● Salvo neste navegador';
