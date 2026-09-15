@@ -1,3 +1,5 @@
+import {handDefinitions,handFrame} from './hands.js';
+import {defaultMarkers} from './rig.js';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -28,7 +30,11 @@ export function createDemo() {
     ico(s([.30,1.535,0]),[.14,.115,.16],colors.gold);
     limb(s([.52,1.28,0]),s([.72,1.02,0]),.077,.05,colors.skin);
     limb(s([.61,1.17,0]),s([.71,1.035,0]),.081,.065,colors.dark);
-    ico(s([.755,.962,.003]),[.067,.092,.046],colors.skin,1);
+    const handSide=side>0?'L':'R',points=defaultMarkers(),f=handFrame(points,handSide),configuration={L:{length:.19,width:.085,palm:.38,roll:0},R:{length:.19,width:.085,palm:.38,roll:0}};
+    const q=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(f.across,f.forward,f.normal));
+    part(new THREE.IcosahedronGeometry(1,1),f.origin.clone().addScaledVector(f.forward,.035).toArray(),[.049,.05,.026],colors.skin,q);
+    for(const d of handDefinitions(points,configuration).filter(d=>d.side===handSide)){const radius=d.finger===0?.013:.010;limb(d.a,d.b,radius,radius*.85,colors.skin);}
+
     limb(s([.165,.99,0]),s([.18,.56,.024]),.117,.082,colors.dark);
     ico(s([.18,.56,.054]),[.088,.098,.075],colors.gold);
     limb(s([.18,.54,.018]),s([.19,.13,0]),.09,.063,colors.cloth);
@@ -37,5 +43,10 @@ export function createDemo() {
   }
   const g=mergeGeometries(parts);g.computeBoundingBox();
   const mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.82,flatShading:true}));
-  mesh.name='Sentinela';const group=new THREE.Group();group.add(mesh);return group;
+  mesh.name='Sentinela';const group=new THREE.Group();group.add(mesh);
+  // This procedural mesh has known finger landmarks. Preserve that calibration
+  // through the initial uniform normalization instead of estimating it again.
+  const box=new THREE.Box3().setFromObject(group),center=box.getCenter(new THREE.Vector3()),scale=2/(box.max.y-box.min.y),points=defaultMarkers(),config={};
+  for(const side of ['L','R']){const f=handFrame(points,side),delta=f.origin.clone().sub(new THREE.Vector3(center.x,box.min.y,center.z)).multiplyScalar(scale).sub(f.origin);config[side]={length:.19*scale,width:.085*scale,palm:.38,roll:0,thumbStart:.28,thumbLength:.6,thumbSide:side==='L'?-1:1,start:delta.dot(f.forward),shift:delta.dot(f.across),depth:delta.dot(f.normal)};}
+  group.userData.handConfig=config;return group;
 }

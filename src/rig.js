@@ -34,7 +34,7 @@ export function segmentsFor(points) {
   });
 }
 export function capturePose(skeleton) {return skeleton.bones.map(b=>({q:b.quaternion.toArray(),p:b.position.toArray()}));}
-export function applyPose(skeleton,pose) {skeleton.bones.forEach((b,i)=>{b.quaternion.fromArray(pose[i].q);b.position.fromArray(pose[i].p);});skeleton.bones[0].updateMatrixWorld(true);}
+export function applyPose(skeleton,pose) {skeleton.bones.forEach((b,i)=>{if(pose[i]){b.quaternion.fromArray(pose[i].q);b.position.fromArray(pose[i].p);}else if(b.userData.restPosition){b.quaternion.identity();b.position.fromArray(b.userData.restPosition);}});skeleton.bones[0].updateMatrixWorld(true);}
 export function samplePose(keys,time) {
   if(!keys.length)return null;
   const sorted=[...keys].sort((a,b)=>a.time-b.time);
@@ -45,12 +45,12 @@ export function samplePose(keys,time) {
   const q=new THREE.Quaternion(),r=new THREE.Quaternion();
   return a.pose.map((v,i)=>({q:q.fromArray(v.q).slerp(r.fromArray(b.pose[i].q),t).toArray(),p:v.p.map((n,j)=>THREE.MathUtils.lerp(n,b.pose[i].p[j],t))}));
 }
-export function makeClip(keys,duration=3) {
+export function makeClip(keys,duration=3,joints=JOINTS) {
   if(!keys.length)return null;
   const ordered=[...keys].sort((a,b)=>a.time-b.time);
   if(ordered[0].time>0)ordered.unshift({...ordered[0],time:0});
   if(ordered.at(-1).time<duration)ordered.push({...ordered.at(-1),time:duration});
-  return new THREE.AnimationClip('RigLab_Action',duration,JOINTS.flatMap(([name],i)=>[
+  return new THREE.AnimationClip('RigLab_Action',duration,joints.flatMap(([name],i)=>[
     new THREE.QuaternionKeyframeTrack(`${name}.quaternion`,ordered.map(k=>k.time),ordered.flatMap(k=>k.pose[i].q)),
     new THREE.VectorKeyframeTrack(`${name}.position`,ordered.map(k=>k.time),ordered.flatMap(k=>k.pose[i].p)),
   ]));

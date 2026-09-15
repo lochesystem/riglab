@@ -168,3 +168,22 @@ test('inspector tabs keep transforms visible and stop painting when leaving weig
  const size=await page.locator('.right-panel').evaluate(el=>({height:el.clientHeight,scroll:el.scrollHeight}));expect(size.scroll).toBeLessThanOrEqual(size.height+1);
  await page.getByRole('tab',{name:'Pose',exact:true}).focus();await page.keyboard.press('ArrowRight');await expect(page.getByRole('tab',{name:'Animações',exact:true})).toHaveAttribute('aria-selected','true');
 });
+
+test('optional fists preserve legacy keys, undo skin changes and survive recovery/project/GLB export',async({page},testInfo)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await page.locator('#auto-rig').click();await expect(page.locator('#view-state')).toHaveText('EDIÇÃO DE ANIMAÇÃO');
+ await page.getByRole('tab',{name:'Pose',exact:true}).click();await page.locator('#wave').click();
+ const legacyPose=await page.evaluate(()=>window.riglabDiagnostics().pose);
+ const save=async name=>{const event=page.waitForEvent('download');await page.locator('#save-project').click();const file=await event,path=testInfo.outputPath(name);await file.saveAs(path);return {path,data:JSON.parse(await fs.readFile(path,'utf8'))};};
+ const legacy=await save('legacy.riglab');expect(legacy.data.version).toBe(1);
+ await page.getByText('Mãos · punhos',{exact:true}).click();await page.locator('#add-hands').click();await expect(page.locator('#asset-meta')).toContainText('49 juntas');
+ expect((await page.evaluate(()=>window.riglabDiagnostics().pose)).slice(0,19)).toEqual(legacyPose);await expect(page.locator('#key-count')).toHaveText('5 poses');
+ await page.locator('#undo').click();await expect(page.locator('#asset-meta')).toContainText('19 juntas');const undone=await save('undone.riglab');expect(undone.data.weights).toEqual(legacy.data.weights);
+ await page.locator('#redo').click();await expect(page.locator('#asset-meta')).toContainText('49 juntas');
+ const before=await page.evaluate(()=>window.riglabDiagnostics().pose);await page.locator('#grip-L').focus();await page.locator('#grip-L').press('End');await page.locator('#grip-L').press('Tab');await expect(page.locator('#grip-L-value')).toHaveText('100%');await expect(page.locator('#grip-R-value')).toHaveText('0%');
+ const fist=await page.evaluate(()=>window.riglabDiagnostics().pose);expect(fist.slice(0,19)).toEqual(before.slice(0,19));expect(fist.slice(34)).toEqual(before.slice(34));expect(fist.slice(19,34)).not.toEqual(before.slice(19,34));await page.locator('#add-key').click();
+ const saved=await save('hands.riglab');expect(saved.data.version).toBe(2);expect(saved.data.state.pose.length).toBe(49);expect(saved.data.state.keys.every(k=>k.pose.length===49)).toBe(true);
+ await expect(page.locator('#status')).toHaveText('● Salvo neste navegador',{timeout:20000});await page.reload();await page.locator('#restore-recovery').click();await expect(page.locator('#asset-meta')).toContainText('49 juntas');expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(fist);
+ await page.locator('#demo').click();await page.locator('#project-file').setInputFiles(saved.path);await expect(page.locator('#asset-meta')).toContainText('49 juntas');expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(fist);
+ const exported=page.waitForEvent('download');await page.locator('#export').click();const glb=await exported,path=testInfo.outputPath('hands.glb');await glb.saveAs(path);const bytes=await fs.readFile(path),json=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString());expect(json.skins[0].joints.length).toBe(49);expect(json.animations[0].channels.length).toBe(100);
+ await page.locator('#project-file').setInputFiles(legacy.path);await expect(page.locator('#asset-meta')).toContainText('19 juntas');expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(legacyPose);expect(errors).toEqual([]);
+});

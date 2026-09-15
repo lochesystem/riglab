@@ -58,3 +58,4 @@
 .joint-inspector details[open] .joint-summary{margin-bottom:9px}
 .joint-summary span{font-size:15px;transform:rotate(180deg)}
 .joint-inspector details[open] .joint-summary span{transform:none}
+.grip-field{display:grid;grid-template-columns:1fr auto;gap:8px;margin:14px 0;font-size:11px;color:#b5bfbd}.grip-field input{grid-column:1/-1;width:100%;accent-color:var(--lime);padding:0}.grip-field output{color:var(--lime);font-size:10px}.hand-presets{display:flex;gap:4px}.hand-presets button{flex:1;padding:7px 3px;font-size:10px}.hands-panel input[type=number]{max-width:65px}

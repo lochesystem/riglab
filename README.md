@@ -22,7 +22,7 @@ Abra http://127.0.0.1:5173. Para gerar a versão distribuível: `npm run build`.
 5. Clique na régua para escolher um tempo, ajuste a pose e pressione **K** para gravar. Arraste os losangos para mover keyframes. Copie, cole ou exclua poses pelos botões da timeline.
 6. **Criar aceno de exemplo** gera cinco poses de teste; **Espaço** reproduz. A interpolação usa quaternion slerp e posições lineares. A duração redimensiona o tempo do clipe.
 7. **Salvar** baixa um `.riglab` com malha, materiais/texturas incorporadas, articulações, pose atual e keyframes. **Abrir projeto** restaura o arquivo.
-8. **Exportar GLB** inclui malha, skin, 19 juntas, quatro influências por vértice e o clipe de animação quando existem keyframes.
+8. **Exportar GLB** inclui malha, skin, 19 juntas (49 com mãos), quatro influências por vértice e o clipe de animação quando existem keyframes.
 
 ## Importar seu personagem
 
@@ -36,7 +36,7 @@ As cinco imagens conceituais estão na biblioteca de referências. São imagens 
 
 - Pesos por distância a segmentos de ossos, com até quatro influências normalizadas. Não é um solver volumétrico; ombros, roupas largas e membros próximos podem deformar mal. Há pintura manual, suavização, proteção de ossos e espelhamento para vértices simétricos.
 - IK CCD simples para braços e pernas, sem limites anatômicos rígidos ou colisões; os controles de cotovelo/joelho acompanham as cadeias. Alvos fora do alcance não esticam o esqueleto.
-- Sem dedos individuais, face, cabelos/roupas com física, retargeting ou mistura de vários clipes.
+- Os dedos têm ossos próprios, mas o controle inicial é de fechamento por mão; não há edição individual dos dedos, colisão entre dedos, face, cabelos/roupas com física, retargeting ou mistura de vários clipes.
 - Apenas GLB estático autocontido. Malhas já rigadas, morph targets, instâncias, Draco e texturas KTX2 não são suportados nesta versão. GLBs exportados podem ser usados em visualizadores e editores externos; para continuar no RigLab, use o `.riglab`.
 - Gerar novamente o rig substitui os pesos e limpa o clipe e o histórico. O aviso aparece ao reajustar o esqueleto. Alterações de juntas exigem regeneração antes de voltar a animar.
 - Undo/redo guarda 40 edições de poses, marcadores e timeline. Importar outra malha, reorientá-la ou regenerar o rig reinicia o histórico. A cópia automática local ocorre a cada 5 segundos após edições, enquanto o editor está parado. Baixe também o projeto para manter um backup independente.
@@ -119,3 +119,11 @@ O deploy executa testes numéricos, três round trips GLB com proporções disti
 Na etapa Animação, selecione **Controle global** na árvore ou no painel de articulações para posicionar/girar todo o personagem. Esse controle é o grupo do personagem, separado dos 19 ossos e dos pesos. Sua posição e rotação são salvas nos keyframes, no projeto e na exportação GLB.
 
 No modo Mover, coxa, coluna e outros segmentos proximais orientam sua própria cadeia, preservando comprimentos e sem girar o quadril compartilhado. Joelho e cotovelo mantêm a resposta articulada; mover o quadril reajusta as pernas para tentar manter os pés apoiados dentro do alcance. Use Rotação/FK para controlar diretamente o ângulo de cada articulação.
+
+## Mãos e punhos
+
+Em **Animação → Pose → Mãos · punhos**, clique em **Adicionar rig das mãos**. Isso acrescenta três ossos por dedo (30 ao todo), preservando as poses existentes do corpo. Cada mão tem um controle de 0–100% e os presets **Aberta**, **Relaxada** e **Punho**. Escolha o tempo e adicione um keyframe para animar o fechamento. Caminhada, idle e corrida preservam a abertura atual das mãos ao gerar o clipe.
+
+A seção recolhida **Ajustar rig das mãos** permite enquadrar a mão e corrigir tamanho, orientação, posição da palma e proporções do polegar. Confira as linhas na mão aberta antes de fechar. O polegar faz oposição ao indicador; os demais dedos flexionam em três articulações. A estimativa usa a geometria próxima ao pulso, não reconhecimento anatômico. Dedos modelados e separados são necessários; mãos já dobradas, dedos unidos, luvas grossas ou marcadores deslocados exigem calibração e podem apresentar interpenetrações.
+
+Os pesos dos dedos são redistribuídos localmente a partir da mão e da influência residual do antebraço nas pontas. Não há recálculo dos pesos de ombros ou tronco. Adicionar ou ajustar o rig das mãos pode ser desfeito, incluindo os pesos. O projeto com mãos usa formato `.riglab` versão 2; versões antigas continuam abrindo com 19 ossos. Salvamento automático, keyframes e exportação GLB incluem os 49 ossos.
