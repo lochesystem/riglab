@@ -1,3 +1,4 @@
+import {setupInspector} from './inspector.js';
 import {readRecovery,writeRecovery} from './recovery.js';
 import {paintInfluences,paintTopology} from './paint.js';
 import './style.css';
@@ -37,6 +38,7 @@ $('#app').innerHTML=`
 createIcons({icons});
 
 const state={stage:'rig',selected:0,tool:'rotate',markers:defaultMarkers(),keys:[],time:0,duration:3,playing:false,loop:true,showSkeleton:true,wire:false,showWeights:false,painting:false,rigged:false,name:'Sentinela da floresta',busy:false};
+const inspector=setupInspector(tab=>{if(tab!=='weights'&&state.painting){state.painting=false;updateUI();}});
 let asset,model,skeleton,bindPose,bindMarkers=null,history=[],future=[],clipboard=null,toastTimer,sourceKind='demo',revision=0;
 const viewport=$('#viewport'),scene=new THREE.Scene();scene.background=new THREE.Color('#262e30');scene.fog=new THREE.Fog('#262e30',8,20);
 const camera=new THREE.PerspectiveCamera(35,1,.01,100);camera.position.set(2.65,1.9,5.3);
@@ -212,6 +214,7 @@ function timePercent(t){return .8+98*t/state.duration;}
 function updateTimeUI(){const handle=$('#playhead-handle');handle.setAttribute('aria-valuemax',state.duration);handle.setAttribute('aria-valuenow',state.time);handle.setAttribute('aria-valuetext',`${state.time.toFixed(2)} segundos`);$('#playhead').style.left=`${timePercent(state.time)}%`;$('#time-readout').textContent=` / ${state.duration.toFixed(2)} s`;const input=$('#current-time');input.max=state.duration;input.disabled=state.stage!=='animate';if(document.activeElement!==input)input.value=state.time.toFixed(2);}
 function rigNeedsRebuild(){return state.rigged&&bindMarkers&&state.markers.some((p,i)=>p.toArray().some((v,a)=>Math.abs(v-bindMarkers[i][a])>1e-7));}
 function updateUI(){
+ inspector.sync(state.stage);
  $('#global-control').disabled=state.stage!=='animate'||state.busy;$('#global-control').classList.toggle('active',!!state.globalSelected);
  $('#asset-name').textContent=state.name;$('#project-title').textContent=state.name;
  const vertices=asset?.children.reduce((n,m)=>n+m.geometry.attributes.position.count,0)||0;

@@ -14,7 +14,7 @@ test('demo rig, pose, IK, keyframes, save/reopen and real GLB skin/animation exp
  await page.locator('#redo').click();expect((await page.evaluate(()=>window.riglabDiagnostics().pose))[5].q).toEqual(rotated[5].q);
  await page.locator('#neutral').click();await page.locator('#ik-mode').click();await page.locator('#joint-select').selectOption('7');await page.locator('#axis-z').fill('0.2');await page.locator('#axis-z').press('Tab');
  expect((await page.evaluate(()=>window.riglabDiagnostics().joint))[2]).toBeGreaterThan(.15);
- await page.locator('#wave').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(5);
+ await page.getByRole('tab',{name:'Pose',exact:true}).click();await page.locator('#wave').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(5);
  await page.locator('#play').click();await expect.poll(async()=> (await page.evaluate(()=>window.riglabDiagnostics())).time,{timeout:10000}).toBeGreaterThan(.1);await page.locator('#play').click();
  await page.screenshot({path:testInfo.outputPath('02-animation-editor.png')});
  const downloadPromise=page.waitForEvent('download');await page.locator('#export').click();const download=await downloadPromise;const glbPath=testInfo.outputPath('character.glb');await download.saveAs(glbPath);
@@ -45,7 +45,7 @@ test('GLB import, reference viewer and malformed input feedback',async({page},te
 
 test('walking generator creates editable looping keys, supports undo and project reload',async({page},testInfo)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/',{waitUntil:'domcontentloaded'});await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);
- await page.locator('#wave').click();await page.locator('#walk-speed').selectOption('1.5');await page.locator('#walk-stride').selectOption('0.4');await page.locator('#walk').click();
+ await page.getByRole('tab',{name:'Pose',exact:true}).click();await page.locator('#wave').click();await page.getByRole('tab',{name:'Animações',exact:true}).click();await page.locator('#animation-kind').selectOption('walk');await page.locator('#walk-speed').selectOption('1.5');await page.locator('#walk-stride').selectOption('0.4');await page.locator('#walk').click();
  expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(25);await expect(page.locator('#duration')).toHaveValue('0.8');
  await page.locator('#undo').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(5);await page.locator('#redo').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(25);
  await page.locator('#play').click();await page.waitForTimeout(1000);await page.locator('#play').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).time).toBeLessThan(.8);
@@ -67,14 +67,14 @@ test('move mode preserves selection and knee movement propagates through the bod
 
 test('idle and running generate, preview, export and restore editable motion',async({page},testInfo)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/',{waitUntil:'domcontentloaded'});await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);
- await page.locator('#idle').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(481);await expect(page.locator('#duration')).toHaveValue('16');
+ await page.getByRole('tab',{name:'Animações',exact:true}).click();await page.locator('#animation-kind').selectOption('idle');await page.locator('#idle').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(481);await expect(page.locator('#duration')).toHaveValue('16');
  await page.locator('#skeleton-toggle').click();await page.locator('#viewport').screenshot({path:testInfo.outputPath('idle.png')});
  const idleRuler=await page.locator('#ruler').boundingBox();
  for(const [seconds,label] of [[2.6,'look-left'],[7.7,'hand-on-hip'],[12.5,'look-up'],[15.8,'return']]){
  await page.mouse.click(idleRuler.x+idleRuler.width*(.008+.98*seconds/16),idleRuler.y+12);await page.locator('#viewport').screenshot({path:testInfo.outputPath(`idle-${label}.png`)});
  }
 
- await page.locator('#run').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(25);await expect(page.locator('#duration')).toHaveValue('0.8');
+ await page.getByRole('tab',{name:'Animações',exact:true}).click();await page.locator('#animation-kind').selectOption('run');await page.locator('#run').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(25);await expect(page.locator('#duration')).toHaveValue('0.8');
  await page.locator('#undo').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(481);await page.locator('#redo').click();
  const ruler=await page.locator('#ruler').boundingBox();
  for(const [phase,label] of [[0,'contact'],[.18,'down'],[.43,'flight'],[.65,'passing']]){
@@ -88,7 +88,7 @@ test('idle and running generate, preview, export and restore editable motion',as
 });
 
 test('MVP recovery restores clip after reload and malformed weights keep the current project',async({page},testInfo)=>{
- await page.goto('/');await page.locator('#auto-rig').click();await page.locator('#wave').click();
+ await page.goto('/');await page.locator('#auto-rig').click();await page.getByRole('tab',{name:'Pose',exact:true}).click();await page.locator('#wave').click();
  await expect(page.locator('#status')).toHaveText('● Salvo neste navegador',{timeout:20000});
  await page.reload();await expect(page.locator('#recovery-banner')).toBeVisible();await page.locator('#restore-recovery').click();
  await expect(page.locator('#key-count')).toHaveText('5 poses');await expect(page.locator('#recovery-banner')).toBeHidden();
@@ -99,7 +99,7 @@ test('MVP recovery restores clip after reload and malformed weights keep the cur
 });
 
 test('MVP playhead drag scrubs without moving keyframes',async({page})=>{
- await page.goto('/');await page.locator('#auto-rig').click();await page.locator('#wave').click();
+ await page.goto('/');await page.locator('#auto-rig').click();await page.getByRole('tab',{name:'Pose',exact:true}).click();await page.locator('#wave').click();
  const keys=await page.locator('.key').evaluateAll(nodes=>nodes.map(n=>n.style.left)),handle=await page.locator('#playhead-handle').boundingBox(),ruler=await page.locator('#ruler').boundingBox();
  await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);await page.mouse.down();await page.mouse.move(ruler.x+ruler.width*.7,handle.y+handle.height/2,{steps:12});
  expect(Number(await page.locator('#playhead-handle').getAttribute('aria-valuenow'))).toBeGreaterThan(2);await page.mouse.up();
@@ -149,9 +149,22 @@ test('JPEG imports remain pixel-identical through repeated project saves and GLB
 });
 
 test('precise idle time and small pointer jitter do not retime keys',async({page})=>{
- await page.goto('/',{waitUntil:'domcontentloaded'});await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);await page.locator('#idle').click();
+ await page.goto('/',{waitUntil:'domcontentloaded'});await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);await page.getByRole('tab',{name:'Animações',exact:true}).click();await page.locator('#animation-kind').selectOption('idle');await page.locator('#idle').click();
  await page.locator('#current-time').fill('7');await page.locator('#current-time').press('Tab');expect((await page.evaluate(()=>window.riglabDiagnostics())).time).toBe(7);
- await page.locator('#wave').click();const before=await page.evaluate(()=>window.riglabDiagnostics().keyframes);const key=page.locator('.key').nth(1),label=await key.getAttribute('aria-label'),box=await key.boundingBox();
+ await page.getByRole('tab',{name:'Pose',exact:true}).click();await page.locator('#wave').click();const before=await page.evaluate(()=>window.riglabDiagnostics().keyframes);const key=page.locator('.key').nth(1),label=await key.getAttribute('aria-label'),box=await key.boundingBox();
  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+2,box.y+box.height/2);await page.mouse.up();
  expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(before);expect(await page.locator('.key').nth(1).getAttribute('aria-label')).toBe(label);
+});
+
+
+test('inspector tabs keep transforms visible and stop painting when leaving weights',async({page})=>{
+ await page.setViewportSize({width:1280,height:720});await page.goto('/');await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);
+ await page.getByRole('tab',{name:'Animações',exact:true}).click();await expect(page.locator('#walk')).toBeVisible();await expect(page.locator('#paint-toggle')).toBeHidden();
+ await page.locator('#animation-kind').selectOption('run');await expect(page.locator('#run')).toBeVisible();await expect(page.locator('#walk')).toBeHidden();
+ await page.getByRole('tab',{name:'Pesos',exact:true}).click();await page.locator('#paint-toggle').click();await expect(page.locator('#paint-toggle')).toHaveAttribute('aria-pressed','true');
+ await page.getByText('Espelhamento e proteção',{exact:true}).click();await expect(page.locator('#paint-visible')).toBeVisible();
+ const bounds=await page.locator('#axis-z').boundingBox();expect(bounds.y+bounds.height).toBeLessThan(720);
+ await page.getByRole('tab',{name:'Pose',exact:true}).click();await expect(page.locator('#paint-toggle')).toHaveAttribute('aria-pressed','false');await expect(page.locator('#neutral')).toBeVisible();
+ const size=await page.locator('.right-panel').evaluate(el=>({height:el.clientHeight,scroll:el.scrollHeight}));expect(size.scroll).toBeLessThanOrEqual(size.height+1);
+ await page.getByRole('tab',{name:'Pose',exact:true}).focus();await page.keyboard.press('ArrowRight');await expect(page.getByRole('tab',{name:'Animações',exact:true})).toHaveAttribute('aria-selected','true');
 });

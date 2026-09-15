@@ -13,3 +13,48 @@
 .recovery-banner{position:absolute;top:58px;left:18px;right:18px;z-index:12;padding:12px;display:flex;align-items:center;gap:10px;background:#26332c;border:1px solid #c5e77e;border-radius:8px;font-size:12px}.recovery-banner span{flex:1}.recovery-banner button{padding:8px}
 
 .time-readout{display:flex;align-items:center;gap:4px;white-space:nowrap}.time-readout input{width:65px;font:inherit;padding:5px;}
+
+/* Context tools: fixed navigation + compact transform channels. */
+.right-panel{display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.right-panel .inspector-head{flex:none;padding:12px 15px}
+.right-panel .inspector-head h2{font-size:16px;margin:5px 0 0}
+.right-panel .inspector-head p{display:none}
+.right-panel[data-stage=animate] .inspector-head{display:none}
+.right-panel #pose-panel{display:flex;flex:1;min-height:0;flex-direction:column;padding:0;border:0;overflow:hidden}
+.inspector-tabs{display:flex;flex:none;gap:0;padding:0 10px;border-bottom:1px solid var(--line);background:#191d20}
+.inspector-tabs [role=tab]{flex:1;padding:14px 3px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:#939fa4;font-size:11px}
+.inspector-tabs [aria-selected=true]{color:var(--lime);border-bottom-color:var(--lime);background:#d7f18b08}
+.inspector-tabs button:focus-visible{outline:1px solid var(--lime);outline-offset:-4px}
+.inspector-page{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:15px;scrollbar-width:thin;scrollbar-color:#414b4d transparent}
+.inspector-page[hidden],.inspector-page [hidden]{display:none!important}
+.inspector-page .walk-generator{border:0;margin:0;padding:0}
+.inspector-page .section-title{margin-bottom:10px;letter-spacing:1px}
+.inspector-page .wide{margin-top:8px;min-height:34px}
+.inspector-page .field-row{margin:9px 0;gap:8px}
+.inspector-page .muted{font-size:10px;line-height:1.5;margin:10px 0 0}
+.motion-choice{display:flex;flex-direction:column;gap:9px;margin-bottom:16px;color:#9aa6a9;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.motion-choice select{width:100%;padding:10px;font-size:12px;text-transform:none;letter-spacing:0;color:#e1e6df}
+.inspector-disclosure{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.inspector-disclosure summary{font-size:11px;color:#a6b0b3;cursor:pointer;list-style-position:inside;padding:3px 0}
+.inspector-disclosure[open] summary{color:#d2debd}
+.right-panel .joint-inspector{flex:none;padding:12px 15px;background:#202528;border-top:1px solid #394144;border-bottom:0}
+.joint-inspector .section-title{font-size:9px;letter-spacing:1px;margin-bottom:9px}
+.joint-inspector #global-control{font-size:10px;padding:5px;min-height:26px;margin-bottom:7px!important}
+.joint-inspector #joint-select{font-size:11px;padding:6px}
+.joint-inspector .field-row{margin:8px 0;font-size:10px}
+.joint-inspector .vector-fields{margin-top:6px;gap:5px}
+.joint-inspector #joint-help{display:none}
+.right-panel #rig-panel,.right-panel #import-panel{min-height:0;overflow:auto;flex:1;padding:13px 15px}
+@media(max-height:700px){.right-panel .joint-inspector{padding:8px 12px}.joint-inspector .section-title{margin-bottom:6px}.inspector-page{padding:12px}.inspector-tabs [role=tab]{padding:10px 3px}}
+#inspector-page-animation{padding-top:12px;padding-bottom:12px}
+#inspector-page-animation .motion-choice{gap:6px;margin-bottom:10px}
+#inspector-page-animation .motion-choice select{padding:8px}
+#inspector-page-animation .field-row{margin:6px 0}
+#inspector-page-animation .muted{font-size:9px;margin-top:8px}
+#inspector-page-animation{padding-top:6px;padding-bottom:6px}
+#inspector-page-animation .motion-choice{margin-bottom:8px}
+.joint-summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#a1a8ae;min-height:14px}
+.joint-summary::-webkit-details-marker{display:none}
+.joint-inspector details[open] .joint-summary{margin-bottom:9px}
+.joint-summary span{font-size:15px;transform:rotate(180deg)}
+.joint-inspector details[open] .joint-summary span{transform:none}

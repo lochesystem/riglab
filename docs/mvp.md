@@ -38,3 +38,10 @@ O ajuste dos marcadores é específico de cada modelo e fica salvo no projeto. F
 - O ajuste automático não identifica semanticamente roupa, armadura ou músculos. Ombros sem clavículas independentes e contato da mão com a cintura ainda podem precisar de acabamento por modelo. Não se considera a validação numérica uma aprovação artística de todas as poses.
 
 Os arquivos pessoais usados na validação ficam fora do repositório público. Testes com vértices reais da demonstração verificam que as mangas acompanham os braços; outros testes cobrem o ciclo importar JPEG → salvar/reabrir repetidamente → exportar, comparando pixels decodificados.
+
+
+### Painel contextual
+
+Na etapa Animação, a lateral direita usa abas Pose, Animações e Pesos. O seletor de animação exibe os parâmetros de um movimento por vez. Pintura avançada e recálculo ficam em grupos recolhíveis. Os canais de transformação ficam em uma seção inferior independente, que também pode ser recolhida para liberar espaço. A rolagem, quando necessária em janelas baixas ou grupos abertos, fica restrita ao conteúdo da aba. Sair da aba Pesos encerra o pincel ativo; a visualização dos pesos continua controlada pelo botão Pesos no viewport.
+
+Referências de organização: [Blender Properties](https://docs.blender.org/manual/id/5.0/editors/properties_editor.html), [ZBrush palettes](https://help.maxon.net/zbr/en-us/Content/html/reference-guide/interface-overview/interface-overview.html) e [Maya Attribute Editor / Channel Box](https://help.autodesk.com/cloudhelp/2023/ENU/Maya-Basics/files/GUID-67A58D31-4722-4769-B3E6-1A35B5B53BED.htm).
