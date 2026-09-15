@@ -13,9 +13,7 @@ export function computeWeights(positions,segments){
   const s=segments[index],center=segments[neck].a;
   const sx=s.a[0]-center[0],sz=s.a[2]-center[2],width=Math.max(.01,Math.hypot(sx,sz));
   const direction=s.b.map((v,i)=>v-s.a[i]),length=Math.max(.01,Math.hypot(...direction));
-  const side=s.name.endsWith('L')?'L':'R';
-  const chain=[index,find('forearm'+side),find('hand'+side)].filter(i=>i>=0);
-  return {index,chain,s,center,width,out:[sx/width,sz/width],direction:direction.map(v=>v/length),length};
+  return {index,s,center,width,out:[sx/width,sz/width],direction:direction.map(v=>v/length),length};
  }):[];
  for(let i=0;i<count;i++){
   const p=[positions[i*3],positions[i*3+1],positions[i*3+2]];
@@ -32,23 +30,17 @@ export function computeWeights(positions,segments){
   const falloff=Math.max((.002+.0015*shoulderBlend)*scale*scale,nearest*.32);
   const scores=distances.map(({d})=>Math.exp(-(d-nearest)/falloff));
   let total=scores.reduce((a,b)=>a+b,0);for(let j=0;j<scores.length;j++)scores[j]/=total;
-  for(const {chain,s,center,width,out,direction,length} of shoulderData){
+  for(const {index,s,center,width,out,direction,length} of shoulderData){
    const lateral=((p[0]-center[0])*out[0]+(p[2]-center[2])*out[1])/width;
    const offset=p.map((v,k)=>v-s.a[k]);
    const along=offset.reduce((n,v,k)=>n+v*direction[k],0);
    const radius=Math.hypot(...offset.map((v,k)=>v-along*direction[k]));
    // Keep full freedom farther down the arm, including downward/A-pose arms.
-   const shaft=1-smooth(length*.12,length*.30,radius);
+   const shaft=1-smooth(length*.25,length*.55,radius);
    const distal=smooth(.25,.85,along/length)*shaft;
-   // Below the shoulder, follow the arm's outward slope instead of a
-   // vertical boundary: a flared vest must not become part of the arm.
-   const below=smooth(.15,.65,(s.a[1]-p[1])/length);
-   const atHeight=direction[1]<-.15?Math.max(0,Math.min(length,(p[1]-s.a[1])/direction[1])):0;
-   const outward=direction[0]*out[0]+direction[2]*out[1];
-   const armWidth=width+Math.max(0,outward*atHeight)*below;
-   const lateralGate=smooth(.60,1.17,lateral*width/armWidth)**2;
+   const lateralGate=smooth(.60,1.17,lateral)**2;
    const gate=lateralGate+(1-lateralGate)*distal;
-   let removed=0;for(const index of chain){const amount=scores[index]*(1-gate);scores[index]-=amount;removed+=amount;}
+   const removed=scores[index]*(1-gate);scores[index]-=removed;
    if(removed>0){
     const spinePart=1-smooth(segments[spine].a[1],segments[chest].a[1],p[1]);
     const neckPart=.65*smooth(s.a[1],segments[head].a[1],p[1])*(1-smooth(.20,.80,lateral));

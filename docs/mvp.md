@@ -33,8 +33,8 @@ Clavículas independentes exigem uma versão de esqueleto com migração de índ
 O ajuste dos marcadores é específico de cada modelo e fica salvo no projeto. Falhas de persistência e de gestos são corrigidas no aplicativo; não devem exigir reparos por personagem.
 
 - Texturas importadas são exportadas como PNG, evitando recompressão JPEG a cada salvamento/reabertura. Isso aumenta o tamanho de projetos e GLBs texturizados.
-- O envelope dos braços acompanha a inclinação da pose de referência abaixo da axila e protege o tronco também contra influências do cotovelo e da mão. Projetos existentes conservam a pintura; use **Recalcular pesos** para aplicar o cálculo novo, substituindo os pesos anteriores.
+- A restrição experimental abaixo da axila foi retirada após provocar influência excessiva do tronco na superfície dos braços. O cálculo anterior foi restaurado; a proteção adicional do colete do Orc permanece pendente. Projetos existentes conservam os pesos salvos; use **Recalcular pesos** para aplicar o cálculo restaurado, substituindo a pintura anterior.
 - O clique num keyframe tolera até 5 pixels antes de iniciar o arraste. O campo de tempo permite navegar por quadro mesmo em clipes densos, como idle. A timeline ainda não possui zoom para separar todos os losangos de clipes longos.
 - O ajuste automático não identifica semanticamente roupa, armadura ou músculos. Ombros sem clavículas independentes e contato da mão com a cintura ainda podem precisar de acabamento por modelo. Não se considera a validação numérica uma aprovação artística de todas as poses.
 
-Os arquivos pessoais usados na validação ficam fora do repositório público. Testes sintéticos reproduzem a proteção do colete em pose A e o ciclo importar JPEG → salvar/reabrir repetidamente → exportar, comparando pixels decodificados.
+Os arquivos pessoais usados na validação ficam fora do repositório público. Testes com vértices reais da demonstração verificam que as mangas acompanham os braços; outros testes cobrem o ciclo importar JPEG → salvar/reabrir repetidamente → exportar, comparando pixels decodificados.

@@ -36,15 +36,25 @@ test('arms in T pose and downward arms keep distal arm influences',()=>{
  const w=at([.31,1.26,0],down);assert.ok(w[5]+w[6]>.95);
 });
 
-test('lower A-pose sleeves do not pull flared ribcage into the arm chain',()=>{
- for(const scale of [.5,1,3]){
-  const points=defaultMarkers();
-  for(const side of [-1,1]){const arm=side>0?5:8;points[arm].set(side*.25,1.5,0);points[arm+1].set(side*.4,1.19,0);points[arm+2].set(side*.5,.94,0);}
-  points.forEach(p=>p.multiplyScalar(scale));
-  for(const side of [-1,1]){
-   const arm=side>0?5:8;
-   for(const [x,y,z] of [[.22,1.25,.10],[.25,1.2,.08],[.28,1.25,.12]]){const w=at([side*x*scale,y*scale,z*scale],points);assert.ok(w[arm]+w[arm+1]+w[arm+2]<.05);}
-   for(const [x,y] of [[.4,1.19],[.5,.94]]){const w=at([side*x*scale,y*scale,0],points);assert.ok(w[arm]+w[arm+1]+w[arm+2]>.99);}
-  }
+// Use actual sleeve vertices, not just points on the bone axis: a narrow
+// anatomical envelope previously transferred these surfaces to the torso.
+test('demo sleeve surface follows the arm instead of being pinned to the torso',async()=>{
+ const {createDemo}=await import('../src/demo.js');
+ const position=createDemo().children[0].geometry.attributes.position;
+ const {indices,weights}=computeWeights(position.array,segmentsFor(defaultMarkers()));
+ const skeleton=buildSkeleton(defaultMarkers()),g=new THREE.BufferGeometry();
+ g.setAttribute('position',position.clone());g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4));g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
+ const mesh=new THREE.SkinnedMesh(g,new THREE.MeshBasicMaterial());mesh.add(skeleton.bones[0]);mesh.bind(skeleton);
+ skeleton.bones[5].rotation.z=Math.PI/3;skeleton.bones[8].rotation.z=-Math.PI/3;mesh.updateMatrixWorld(true);skeleton.update();
+ let checked=0;
+ for(let i=0;i<position.count;i++){
+  const p=new THREE.Vector3().fromBufferAttribute(position,i);
+  if(Math.abs(p.x)<.36||p.y<1.20||p.y>1.43)continue;
+  const arm=p.x>0?5:8;let armWeight=0;
+  for(let j=0;j<4;j++)if(indices[i*4+j]>=arm&&indices[i*4+j]<=arm+2)armWeight+=weights[i*4+j];
+  assert.ok(armWeight>.98,`sleeve ${p.toArray()}: arm weight ${armWeight}`);
+  const expected=p.clone().applyMatrix4(skeleton.bones[arm].matrixWorld.clone().multiply(skeleton.boneInverses[arm]));
+  assert.ok(mesh.applyBoneTransform(i,p.clone()).distanceTo(expected)<.005);checked++;
  }
+ assert.ok(checked>100);
 });
