@@ -87,7 +87,7 @@ function replaceModel(rig=false){
  state.rigged=rig;if(rig){skeleton.calculateInverses();bindPose=capturePose(skeleton);bindMarkers=state.markers.map(p=>p.toArray());}else{bindMarkers=null;}updateVisual();
 }
 function loadAsset(newAsset,name,kind='import'){
- disposeGroup(asset,true);asset=newAsset;state.name=name;sourceKind=kind;state.handRig=null;state.markers=defaultMarkers();state.keys=[];state.time=0;state.playing=false;state.stage=kind==='demo'?'rig':'import';state.selected=0;state.tool='rotate';placementBeforeRig=null;state.duration=3;$('#duration').value=3;$('#rest-type').value='A';$('#rig-width').value=1;history=[];future=[];replaceModel(false);frameCamera();updateUI();revision++;
+ disposeGroup(asset,true);asset=newAsset;state.name=name;sourceKind=kind;state.handRig=null;state.markers=defaultMarkers();state.keys=[];state.time=0;state.playing=false;state.stage=kind==='demo'?'rig':'import';state.selected=0;state.tool='rotate';placementBeforeRig=null;state.duration=3;$('#duration').value=3;$('#rest-type').value='A';$('#rig-width').value=1;history=[];future=[];replaceModel(false);frameCamera();updateUI();markChanged();
 }
 // Keep inspection materials separate so saved/exported assets retain their appearance.
 const paintUndo=[],lockedBones=new Set(),topologyCache=new WeakMap();
@@ -145,7 +145,7 @@ function paintAt(e,dose=1){
   for(let j=0;j<4;j++){si.setComponent(i,j,painted.indices[j]);sw.setComponent(i,j,painted.weights[j]);}stroke.touched.add(meshIndex+':'+i);changed++;
  }
 
- if(changed){si.needsUpdate=true;sw.needsUpdate=true;asset.children[meshIndex].geometry.setAttribute('skinIndex',si.clone());asset.children[meshIndex].geometry.setAttribute('skinWeight',sw.clone());mesh.boundingSphere=null;const view=weightViews.get(mesh);if(view)view.weights=null;updateWeightView();stroke.count=stroke.touched.size;$('#paint-feedback').textContent=`${stroke.count} vértices pintados · ${JOINTS[state.selected][1]}`;revision++;}
+ if(changed){si.needsUpdate=true;sw.needsUpdate=true;asset.children[meshIndex].geometry.setAttribute('skinIndex',si.clone());asset.children[meshIndex].geometry.setAttribute('skinWeight',sw.clone());mesh.boundingSphere=null;const view=weightViews.get(mesh);if(view)view.weights=null;updateWeightView();stroke.count=stroke.touched.size;$('#paint-feedback').textContent=`${stroke.count} vértices pintados · ${JOINTS[state.selected][1]}`;markChanged();}
 }
 renderer.domElement.addEventListener('pointerdown',e=>{if(!state.painting||state.busy||e.button!==0)return;e.stopImmediatePropagation();e.preventDefault();state.playing=false;orbit.enabled=false;brushPointer={clientX:e.clientX,clientY:e.clientY,shiftKey:e.shiftKey};stroke={saved:false,touched:new Set(),count:0,last:performance.now()};renderer.domElement.setPointerCapture(e.pointerId);paintAt(e);},{capture:true});
 renderer.domElement.addEventListener('pointermove',e=>{brushPointer={clientX:e.clientX,clientY:e.clientY,shiftKey:e.shiftKey};if(stroke)e.stopImmediatePropagation();updateBrushCursor();},{capture:true});
@@ -155,7 +155,7 @@ function finishPaint(e){if(!stroke)return;e.stopImmediatePropagation();stroke=nu
 renderer.domElement.addEventListener('pointerup',finishPaint,{capture:true});renderer.domElement.addEventListener('pointercancel',finishPaint,{capture:true});
 $('#paint-toggle').onclick=()=>{state.globalSelected=false;state.painting=!state.painting;state.playing=false;if(state.painting)state.showWeights=true;updateUI();};
 $('#paint-lock').onchange=e=>{e.target.checked?lockedBones.add(state.selected):lockedBones.delete(state.selected);};
-$('#paint-undo').onclick=()=>{if(paintUndo.length)installWeights(paintUndo.pop());$('#paint-feedback').textContent='Pincelada desfeita.';revision++;};
+$('#paint-undo').onclick=()=>{if(paintUndo.length)installWeights(paintUndo.pop());$('#paint-feedback').textContent='Pincelada desfeita.';markChanged();};
 
 const weightViews=new Map();
 const weightPalette=['#142d70','#00b8e0','#35ce69','#ffe34b','#f23832'].map(c=>new THREE.Color(c));
@@ -245,10 +245,11 @@ function applyGlobal(value){model.position.fromArray(value?.p||[0,0,0]);model.qu
 function sampleGlobal(time){const keys=state.keys.filter(k=>k.global).map(k=>({time:k.time,pose:[k.global]}));if(keys.length)applyGlobal(samplePose(keys,time)[0]);}
 function addGlobalTracks(clip,keys){const ordered=keys.filter(k=>k.global).sort((a,b)=>a.time-b.time);if(!ordered.length)return;const times=ordered.map(k=>k.time);clip.tracks.push(new THREE.VectorKeyframeTrack('RigLab_Character.position',times,ordered.flatMap(k=>k.global.p)),new THREE.QuaternionKeyframeTrack('RigLab_Character.quaternion',times,ordered.flatMap(k=>k.global.q)));}
 function snapshot(withSkin=false){return {handRig:structuredClone(state.handRig),skin:withSkin&&state.rigged?captureWeights():undefined,global:placementBeforeRig||captureGlobal(),bindMarkers:structuredClone(bindMarkers),markers:state.markers.map(p=>p.toArray()),pose:skeleton?capturePose(skeleton):null,keys:structuredClone(state.keys),time:state.time,duration:state.duration,stage:state.stage,rigged:state.rigged};}
-function record(withSkin=false){history.push(snapshot(withSkin));if(history.length>40)history.shift();future=[];$('#undo').disabled=false;$('#redo').disabled=true;revision++;}
+function markChanged(){revision++;$('#status').textContent='● Alterações não salvas';}
+function record(withSkin=false){history.push(snapshot(withSkin));if(history.length>40)history.shift();future=[];$('#undo').disabled=false;$('#redo').disabled=true;markChanged();}
 function restore(s){state.playing=false;const handChanged=JSON.stringify(state.handRig)!==JSON.stringify(s.handRig||null);state.handRig=structuredClone(s.handRig||null);state.markers=s.markers.map(p=>new THREE.Vector3(...p));state.keys=s.keys;state.time=s.time;state.duration=s.duration;state.stage=s.stage;$('#duration').value=s.duration;if(s.rigged!==state.rigged||handChanged)replaceModel(s.rigged);if(s.skin&&s.rigged)installWeights(s.skin);placementBeforeRig=s.stage==='animate'?null:s.global;applyGlobal(s.stage==='animate'?s.global:undefined);if(s.pose&&skeleton)applyPose(skeleton,s.pose);updateUI();}
-function undo(){if(!history.length||state.busy)return;future.push(snapshot(!!history.at(-1).skin));restore(history.pop());revision++;}
-function redo(){if(!future.length||state.busy)return;history.push(snapshot(!!future.at(-1).skin));restore(future.pop());revision++;}
+function undo(){if(!history.length||state.busy)return;future.push(snapshot(!!history.at(-1).skin));restore(history.pop());markChanged();}
+function redo(){if(!future.length||state.busy)return;history.push(snapshot(!!future.at(-1).skin));restore(future.pop());markChanged();}
 let placementBeforeRig=null;
 function setStage(stage){if(state.busy)return;if(stage==='animate'&&(!state.rigged||rigNeedsRebuild()))return;state.playing=false;if(state.rigged&&stage!=='animate')applyPose(skeleton,bindPose);if(stage!=='animate'&&state.stage==='animate'){placementBeforeRig=captureGlobal();applyGlobal();}if(stage==='animate'&&placementBeforeRig){applyGlobal(placementBeforeRig);placementBeforeRig=null;}state.stage=stage;if(stage==='animate')seek(state.time);updateUI();}
 function frameCamera(front=false){orbit.target.set(0,1,0);camera.position.set(front?0:2.2,front?1.02:1.7,front?4.6:4.6);orbit.update();$('#view-name').textContent=front?'Frontal':'Perspectiva';}
@@ -275,12 +276,12 @@ async function refineWeights(){
     geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(computed[i].weights,4));
    }
   });
-  paintUndo.length=0;revision++;toast('Pesos recalculados. Esqueleto, pose e animação preservados.');
+  paintUndo.length=0;markChanged();toast('Pesos recalculados. Esqueleto, pose e animação preservados.');
  }catch(e){toast(e.message,true);}finally{busy(false);}
 }
 async function generateRig(){
  if(state.busy)return;busy(true);state.playing=false;gizmo.detach();
- try{const computed=[];for(const mesh of asset.children)computed.push(await weightGeometry(mesh.geometry));asset.children.forEach((mesh,i)=>{mesh.geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(computed[i].indices,4));mesh.geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(computed[i].weights,4));});replaceModel(true);if(placementBeforeRig){applyGlobal(placementBeforeRig);placementBeforeRig=null;}state.stage='animate';state.tool='rotate';state.keys=[];state.time=0;history=[];future=[];revision++;toast('Rig criado. Selecione uma articulação para posar o personagem.');}
+ try{const computed=[];for(const mesh of asset.children)computed.push(await weightGeometry(mesh.geometry));asset.children.forEach((mesh,i)=>{mesh.geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(computed[i].indices,4));mesh.geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(computed[i].weights,4));});replaceModel(true);if(placementBeforeRig){applyGlobal(placementBeforeRig);placementBeforeRig=null;}state.stage='animate';state.tool='rotate';state.keys=[];state.time=0;history=[];future=[];markChanged();toast('Rig criado. Selecione uma articulação para posar o personagem.');}
  catch(e){toast(e.message,true);}finally{busy(false);}
 }
 function rebuildHands(config=null){
@@ -293,7 +294,7 @@ function rebuildHands(config=null){
  asset.children.forEach((m,i)=>{m.geometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(computed[i].indices,4));m.geometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(computed[i].weights,4));});
  replaceModel(true);applyGlobal(global);
  const adapt=p=>{applyPose(skeleton,extendHandPose(p,bindPose));for(const [side,index] of [['L',25],['R',40]]){const q=p[index]?.q;setGrip(skeleton,side,q?Math.min(1,2*Math.atan2(Math.hypot(...q.slice(0,3)),Math.abs(q[3]))/FINGER_CURL):0);}return capturePose(skeleton);};
- state.keys=oldKeys.map(k=>({...k,pose:adapt(k.pose)}));applyPose(skeleton,adapt(pose));clipboard=null;revision++;updateUI();toast('Rig das mãos preparado. Confira o alinhamento dos dedos e teste o fechamento.');
+ state.keys=oldKeys.map(k=>({...k,pose:adapt(k.pose)}));applyPose(skeleton,adapt(pose));clipboard=null;markChanged();updateUI();toast('Rig das mãos preparado. Confira o alinhamento dos dedos e teste o fechamento.');
 }
 function seek(t){state.time=THREE.MathUtils.clamp(Math.round(t*30)/30,0,state.duration);const p=samplePose(state.keys,state.time);if(p&&state.rigged&&state.stage==='animate'){sampleGlobal(state.time);applyPose(skeleton,p);}updateVisual();updateGizmo();updateFields();renderTimeline();$('#delete-key').disabled=!state.keys.some(k=>Math.abs(k.time-state.time)<.02)||state.stage!=='animate';}
 function addKey(){if(!state.rigged||state.stage!=='animate'||state.busy)return;state.playing=false;record();const pose=capturePose(skeleton);state.keys=state.keys.filter(k=>Math.abs(k.time-state.time)>.02);state.keys.push({time:state.time,pose,global:captureGlobal()});updateUI();toast(`Pose salva em ${state.time.toFixed(2)} s`);}
@@ -345,7 +346,7 @@ async function openProject(file){
   }
   loadAsset(prepared,p.name,p.sourceKind==='demo'?'demo':'import');prepared=null;
   state.handRig=structuredClone(p.state.handRig||null);state.markers=(p.state.rigged?p.state.bindMarkers:p.state.markers).map(v=>new THREE.Vector3(...v));if(p.state.rigged)replaceModel(true);
-  restore(p.state);history=[];future=[];revision++;recoveryPending=false;$('#recovery-banner').classList.add('hidden');toast('Projeto restaurado com modelo, rig, pesos e poses.');
+  restore(p.state);history=[];future=[];markChanged();recoveryPending=false;$('#recovery-banner').classList.add('hidden');toast('Projeto restaurado com modelo, rig, pesos e poses.');
  }catch(e){if(prepared)disposeGroup(prepared,true);toast('Não foi possível abrir: '+e.message,true);}finally{busy(false);$('#project-file').value='';}
 }
 let recoveryPending=true,recoveryWriting=false,recoveryRevision=0,recoveryEntry=null,cachedRecoveryAsset=null,cachedRecoveryGLB=null;
@@ -356,7 +357,7 @@ async function autosave(){
   if(cachedRecoveryAsset!==currentAsset){const encoded=toBase64(await new GLTFExporter().parseAsync(currentAsset,{binary:true}));if(currentAsset!==asset||revision!==currentRevision)return;cachedRecoveryGLB=encoded;cachedRecoveryAsset=currentAsset;}
   if(currentAsset!==asset||revision!==currentRevision)return;
   await writeRecovery({format:'riglab',version:state.handRig?2:1,name,sourceKind:kind,asset:cachedRecoveryGLB,weights,state:projectState});recoveryRevision=currentRevision;
-  $('#status').textContent='● Salvo neste navegador';
+  if(currentAsset===asset&&revision===currentRevision)$('#status').textContent='● Salvo neste navegador';
  }catch(e){$('#status').textContent='● Cópia automática indisponível — use Salvar';}finally{recoveryWriting=false;}
 }
 async function initializeRecovery(){
@@ -387,7 +388,7 @@ $('#duration').onchange=e=>{const next=THREE.MathUtils.clamp(Number(e.target.val
 $$('[data-reference]').forEach(b=>b.onclick=()=>{const [file,name]=refs[b.dataset.reference];$('#reference-title').textContent=name;$('#reference-image').src=`${import.meta.env.BASE_URL}references/${file}.jpg`;$('#reference-image').alt=name;$('#reference-dialog').showModal();});$('#close-reference').onclick=()=>$('#reference-dialog').close();
 viewport.addEventListener('dragover',e=>e.preventDefault());viewport.addEventListener('drop',e=>{e.preventDefault();importFile(e.dataTransfer.files[0]);});
 window.addEventListener('keydown',e=>{if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)||$('#reference-dialog').open||$('#textures-dialog').open||state.busy)return;const key=e.key.toLowerCase();if((e.ctrlKey||e.metaKey)&&key==='z'){e.preventDefault();if(state.painting){if(!e.shiftKey)$('#paint-undo').click();}else e.shiftKey?redo():undo();return;}if(e.code==='Space'){e.preventDefault();togglePlay();}if(key==='k')addKey();if(key==='r'&&state.stage==='animate')setTool('rotate');if(key==='g')setTool('move');if(key==='f')frameCamera();});
-const texturesUI=createTexturesPanel({asset:()=>asset,name:()=>state.name,isBusy:()=>state.busy,busy,toast,download,replace:(entry,texture)=>{clearWeightView();entry.material[entry.slot]=texture;entry.material.needsUpdate=true;const mesh=model.children.find(m=>m.name===`Character_${entry.meshIndex}`);if(mesh){const material=materials(mesh)[entry.materialIndex];material[entry.slot]=texture;material.needsUpdate=true;}cachedRecoveryAsset=null;revision++;updateWeightView();}});
+const texturesUI=createTexturesPanel({asset:()=>asset,name:()=>state.name,isBusy:()=>state.busy,busy,toast,download,replace:(entry,texture)=>{clearWeightView();entry.material[entry.slot]=texture;entry.material.needsUpdate=true;const mesh=model.children.find(m=>m.name===`Character_${entry.meshIndex}`);if(mesh){const material=materials(mesh)[entry.materialIndex];material[entry.slot]=texture;material.needsUpdate=true;}cachedRecoveryAsset=null;markChanged();updateWeightView();}});
 $('#textures').onclick=()=>{state.playing=false;texturesUI.open();};
 handsUI=createHandsPanel({enable:()=>rebuildHands(),fit:config=>rebuildHands(config),record:()=>{state.playing=false;record();},grip:(side,value)=>{if(!state.handRig)return;state.playing=false;setGrip(skeleton,side,value);updateVisual();updateFields();},focus:side=>{if(!state.rigged)return;const wrist=skeleton.bones[side==='L'?7:10].getWorldPosition(new THREE.Vector3());orbit.target.copy(wrist);camera.position.copy(wrist).add(new THREE.Vector3(0,.07,.55));orbit.update();}});
 const clock=new THREE.Clock();function tick(){requestAnimationFrame(tick);const delta=Math.min(clock.getDelta(),.1);if(state.playing&&state.rigged){state.time+=delta;if(state.time>state.duration){if(state.loop)state.time%=state.duration;else{state.time=state.duration;state.playing=false;updateUI();}}const pose=samplePose(state.keys,state.time);if(pose){sampleGlobal(state.time);applyPose(skeleton,pose);}updateVisual();updateTimeUI();}if(!gizmo.dragging&&!stroke)orbit.update();if(state.painting&&brushPointer){const now=performance.now();if(stroke&&now-stroke.last>=33){paintAt(brushPointer,Math.min((now-stroke.last)/1000,.1)*3);stroke.last=now;}updateBrushCursor();}renderer.render(scene,camera);}loadAsset(normalize(createDemo()),'Sentinela da floresta','demo');tick();initializeRecovery();

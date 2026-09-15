@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 
 test('demo rig, pose, IK, keyframes, save/reopen and real GLB skin/animation export',async({page},testInfo)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.riglabDiagnostics?.().vertices>0);
- await expect(page.locator('canvas')).toBeVisible();await page.screenshot({path:testInfo.outputPath('01-rig-editor.png')});
+ await expect(page.locator('#viewport canvas')).toBeVisible();await page.screenshot({path:testInfo.outputPath('01-rig-editor.png')});
  await page.getByRole('button',{name:'Gerar auto-rig'}).click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);
  await expect(page.locator('#view-state')).toHaveText('EDIÇÃO DE ANIMAÇÃO');
  const before=await page.evaluate(()=>window.riglabDiagnostics().pose);
@@ -36,7 +36,7 @@ test('demo rig, pose, IK, keyframes, save/reopen and real GLB skin/animation exp
 
 test('GLB import, reference viewer and malformed input feedback',async({page},testInfo)=>{
  await page.goto('/',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.riglabDiagnostics?.());
- await page.locator('[data-reference="1"]').click();await expect(page.locator('dialog')).toBeVisible();await page.locator('#close-reference').click();
+ await page.locator('[data-reference="1"]').click();await expect(page.locator('#reference-dialog')).toBeVisible();await page.locator('#close-reference').click();
  // A self-contained unrigged GLB produced from the same three.js exporter.
  const data=await page.evaluate(async()=>{const THREE=await import('/node_modules/three/build/three.module.js');const {GLTFExporter}=await import('/node_modules/three/examples/jsm/exporters/GLTFExporter.js');const scene=new THREE.Scene();scene.add(new THREE.Mesh(new THREE.BoxGeometry(.4,2,.25),new THREE.MeshStandardMaterial({color:0x669988})));const buffer=await new GLTFExporter().parseAsync(scene,{binary:true});return Array.from(new Uint8Array(buffer));});
  const glbPath=testInfo.outputPath('input.glb');await fs.writeFile(glbPath,Buffer.from(data));await page.locator('#model-file').setInputFiles(glbPath);await page.waitForFunction(()=>window.riglabDiagnostics().name==='input');await expect(page.locator('#import-panel')).toBeVisible();await page.locator('#start-rig').click();await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);
