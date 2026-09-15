@@ -26,3 +26,15 @@ Clavículas independentes exigem uma versão de esqueleto com migração de índ
 - O filtro de visibilidade e a suavização precisam ser avaliados em máquinas modestas com modelos próximos ao limite de 200 mil vértices.
 - Recuperação local depende do armazenamento do navegador; não é backup em nuvem e não resolve edição simultânea em múltiplas abas.
 - Sem dedos, face, retargeting, física de roupas ou vários clipes neste MVP.
+
+
+### Validação com Orc e Elf
+
+O ajuste dos marcadores é específico de cada modelo e fica salvo no projeto. Falhas de persistência e de gestos são corrigidas no aplicativo; não devem exigir reparos por personagem.
+
+- Texturas importadas são exportadas como PNG, evitando recompressão JPEG a cada salvamento/reabertura. Isso aumenta o tamanho de projetos e GLBs texturizados.
+- O envelope dos braços acompanha a inclinação da pose de referência abaixo da axila e protege o tronco também contra influências do cotovelo e da mão. Projetos existentes conservam a pintura; use **Recalcular pesos** para aplicar o cálculo novo, substituindo os pesos anteriores.
+- O clique num keyframe tolera até 5 pixels antes de iniciar o arraste. O campo de tempo permite navegar por quadro mesmo em clipes densos, como idle. A timeline ainda não possui zoom para separar todos os losangos de clipes longos.
+- O ajuste automático não identifica semanticamente roupa, armadura ou músculos. Ombros sem clavículas independentes e contato da mão com a cintura ainda podem precisar de acabamento por modelo. Não se considera a validação numérica uma aprovação artística de todas as poses.
+
+Os arquivos pessoais usados na validação ficam fora do repositório público. Testes sintéticos reproduzem a proteção do colete em pose A e o ciclo importar JPEG → salvar/reabrir repetidamente → exportar, comparando pixels decodificados.

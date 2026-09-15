@@ -35,3 +35,16 @@ test('arms in T pose and downward arms keep distal arm influences',()=>{
  const down=defaultMarkers();down[6].set(.31,1.21,0);down[7].set(.32,.9,0);
  const w=at([.31,1.26,0],down);assert.ok(w[5]+w[6]>.95);
 });
+
+test('lower A-pose sleeves do not pull flared ribcage into the arm chain',()=>{
+ for(const scale of [.5,1,3]){
+  const points=defaultMarkers();
+  for(const side of [-1,1]){const arm=side>0?5:8;points[arm].set(side*.25,1.5,0);points[arm+1].set(side*.4,1.19,0);points[arm+2].set(side*.5,.94,0);}
+  points.forEach(p=>p.multiplyScalar(scale));
+  for(const side of [-1,1]){
+   const arm=side>0?5:8;
+   for(const [x,y,z] of [[.22,1.25,.10],[.25,1.2,.08],[.28,1.25,.12]]){const w=at([side*x*scale,y*scale,z*scale],points);assert.ok(w[arm]+w[arm+1]+w[arm+2]<.05);}
+   for(const [x,y] of [[.4,1.19],[.5,.94]]){const w=at([side*x*scale,y*scale,0],points);assert.ok(w[arm]+w[arm+1]+w[arm+2]>.99);}
+  }
+ }
+});

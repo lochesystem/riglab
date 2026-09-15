@@ -11,3 +11,5 @@
 #playhead-handle{position:absolute;left:-10px;top:-12px;width:21px;height:23px;pointer-events:auto;cursor:ew-resize;touch-action:none;z-index:6;border-radius:4px}#playhead-handle:focus-visible{outline:2px solid #e2ff85;background:#d1f48520}.ruler,.key-track{touch-action:none}
 
 .recovery-banner{position:absolute;top:58px;left:18px;right:18px;z-index:12;padding:12px;display:flex;align-items:center;gap:10px;background:#26332c;border:1px solid #c5e77e;border-radius:8px;font-size:12px}.recovery-banner span{flex:1}.recovery-banner button{padding:8px}
+
+.time-readout{display:flex;align-items:center;gap:4px;white-space:nowrap}.time-readout input{width:65px;font:inherit;padding:5px;}

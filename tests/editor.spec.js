@@ -123,3 +123,35 @@ test('global placement is separate from anatomy and survives keys, undo and proj
  const saving=page.waitForEvent('download');await page.locator('#save-project').click();const file=testInfo.outputPath('global.riglab');await(await saving).saveAs(file);await page.locator('#demo').click();await page.locator('#project-file').setInputFiles(file);await page.waitForFunction(()=>window.riglabDiagnostics().rigged);d=await page.evaluate(()=>window.riglabDiagnostics());expect(d.global.p[0]).toBeCloseTo(.6);expect(d.pose).toEqual(before);
  const exporting=page.waitForEvent('download');await page.locator('#export').click();const glb=testInfo.outputPath('global.glb');await(await exporting).saveAs(glb);const bytes=await fs.readFile(glb);const json=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString());const root=json.nodes.findIndex(n=>n.name==='RigLab_Character');expect(root).toBeGreaterThanOrEqual(0);expect(json.skins[0].joints).toHaveLength(19);expect(json.animations[0].channels.some(c=>c.target.node===root&&c.target.path==='translation')).toBe(true);expect(errors).toEqual([]);
 });
+
+test('JPEG imports remain pixel-identical through repeated project saves and GLB export',async({page},testInfo)=>{
+ await page.goto('/',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.riglabDiagnostics?.());
+ const source=await page.evaluate(async()=>{
+  const THREE=await import('/node_modules/three/build/three.module.js');const {GLTFExporter}=await import('/node_modules/three/examples/jsm/exporters/GLTFExporter.js');
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=64;const ctx=canvas.getContext('2d');
+  for(let y=0;y<64;y++)for(let x=0;x<64;x++){ctx.fillStyle=`rgb(${x*4},${y*4},${(x*y*17)%256})`;ctx.fillRect(x,y,1,1);}
+  const tex=new THREE.CanvasTexture(canvas);tex.userData.mimeType='image/jpeg';const mesh=new THREE.Mesh(new THREE.BoxGeometry(.4,2,.25),new THREE.MeshStandardMaterial({map:tex}));
+  return Array.from(new Uint8Array(await new GLTFExporter().parseAsync(mesh,{binary:true})));
+ });
+ const pixels=bytes=>page.evaluate(async data=>{
+  const raw=new Uint8Array(data),view=new DataView(raw.buffer),n=view.getUint32(12,true),doc=JSON.parse(new TextDecoder().decode(raw.slice(20,20+n))),im=doc.images[0],bv=doc.bufferViews[im.bufferView],start=28+n+(bv.byteOffset||0);
+  const bitmap=await createImageBitmap(new Blob([raw.slice(start,start+bv.byteLength)],{type:im.mimeType}));const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0);return {mime:im.mimeType,data:Array.from(ctx.getImageData(0,0,canvas.width,canvas.height).data)};
+ },Array.from(bytes));
+ const original=await pixels(source);expect(original.mime).toBe('image/jpeg');
+ await page.locator('#model-file').setInputFiles({name:'texture.glb',mimeType:'model/gltf-binary',buffer:Buffer.from(source)});await page.waitForFunction(()=>window.riglabDiagnostics().name==='texture');
+ await page.locator('#start-rig').click();await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);
+ for(let cycle=0;cycle<3;cycle++){
+  const pending=page.waitForEvent('download');await page.locator('#save-project').click();const file=testInfo.outputPath(`round-${cycle}.riglab`);await(await pending).saveAs(file);const project=JSON.parse(await fs.readFile(file,'utf8'));
+  const saved=await pixels(Buffer.from(project.asset,'base64'));expect(saved.mime).toBe('image/png');expect(saved.data).toEqual(original.data);
+  await page.locator('#project-file').setInputFiles(file);await page.waitForFunction(()=>!document.querySelector('#busy').classList.contains('hidden')||window.riglabDiagnostics().rigged);await expect(page.locator('#busy')).toBeHidden();
+ }
+ const pending=page.waitForEvent('download');await page.locator('#export').click();const file=testInfo.outputPath('texture.glb');await(await pending).saveAs(file);expect((await pixels(await fs.readFile(file))).data).toEqual(original.data);
+});
+
+test('precise idle time and small pointer jitter do not retime keys',async({page})=>{
+ await page.goto('/',{waitUntil:'domcontentloaded'});await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);await page.locator('#idle').click();
+ await page.locator('#current-time').fill('7');await page.locator('#current-time').press('Tab');expect((await page.evaluate(()=>window.riglabDiagnostics())).time).toBe(7);
+ await page.locator('#wave').click();const before=await page.evaluate(()=>window.riglabDiagnostics().keyframes);const key=page.locator('.key').nth(1),label=await key.getAttribute('aria-label'),box=await key.boundingBox();
+ await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+2,box.y+box.height/2);await page.mouse.up();
+ expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(before);expect(await page.locator('.key').nth(1).getAttribute('aria-label')).toBe(label);
+});
