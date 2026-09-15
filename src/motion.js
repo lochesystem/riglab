@@ -23,11 +23,15 @@ export function createMotionRig(points){
   const world=frame(direction,right).multiply(reference.invert());
   bones[index].quaternion.copy(bones[index].parent.getWorldQuaternion(new THREE.Quaternion()).invert()).multiply(world);bones[0].updateMatrixWorld(true);
  }
- function feet(targets){
+ function feet(targets,{reach=.998,smoothing=0}={}){
   bones[0].updateMatrixWorld(true);let rootY=bones[0].position.y;
   targets.forEach(({index,position},side)=>{
    const hip=bones[index].getWorldPosition(new THREE.Vector3()),horizontal=(position.x-hip.x)**2+(position.z-hip.z)**2;
-   rootY=Math.min(rootY,position.y+Math.sqrt(Math.max(0,(lengths[side]*.998)**2-horizontal))-(hip.y-bones[0].position.y));
+   const limit=position.y+Math.sqrt(Math.max(0,(lengths[side]*reach)**2-horizontal))-(hip.y-bones[0].position.y);
+   const low=Math.min(rootY,limit);
+   // A conservative smooth minimum avoids a velocity corner when the limiting
+   // leg changes. It never raises the pelvis above either reachable height.
+   rootY=smoothing>0?low-smoothing*Math.log1p(Math.exp(-Math.abs(rootY-limit)/smoothing)):low;
   });
   bones[0].position.y=rootY;bones[0].updateMatrixWorld(true);
   for(const {index,position,pitch=0,kneePole} of targets){

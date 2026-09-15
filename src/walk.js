@@ -12,7 +12,11 @@ export function footTrajectory(phase,length,halfStep){
   const tangent=-2*halfStep*.4/.6;
   const z=stance?halfStep*(1-2*u):-halfStep+tangent*u+(2*halfStep-tangent)*smooth(u);
   const lift=stance?0:length*.095*Math.sin(Math.PI*u)**3;
-  const pitch=stance?-.12*(1-smooth(t/.12))+.22*smooth((t-.43)/.17):.22-.34*smooth(u);
+  const rawPitch=stance?-.12*(1-smooth(t/.12))+.22*smooth((t-.43)/.17):.22-.34*smooth(u);
+  // Ease through flat-foot: the contact correction uses max(heel,toe), so
+  // crossing zero pitch with nonzero velocity would kick the ankle vertically.
+  const band=.05,uPitch=Math.min(1,Math.abs(rawPitch)/band);
+  const pitch=Math.abs(rawPitch)>=band?rawPitch:Math.sign(rawPitch)*band*(6*uPitch**3-8*uPitch**4+3*uPitch**5);
   return {z,lift,pitch};
 }
 
@@ -45,7 +49,7 @@ export function generateWalk(points,{speed=1,stride=.28}={}) {
       target.position.x=points[0].x+sign*halfTrack;
       target.kneePole=new THREE.Vector3(-sign*.06,0,1);
       return target;
-    }));
+    }),{reach:.994,smoothing:length*.008});
     const shoulderFrame=bones[2].getWorldQuaternion(new THREE.Quaternion());
     for(const [index,sign,offset] of [[5,1,0],[8,-1,Math.PI]]) {
       const swing=stride*.85*Math.cos(theta+offset-.12);

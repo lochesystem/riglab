@@ -59,3 +59,25 @@ test('walk keeps narrow noncrossing tracks, forward knees and continuous support
  assert.ok(skeleton.bones[7].getWorldPosition(new THREE.Vector3()).z<skeleton.bones[10].getWorldPosition(new THREE.Vector3()).z,'arms must oppose legs');
  }
 });
+
+test('walk knee extension has no abrupt acceleration at support transitions or loop seam',()=>{
+ const limits=new Map([[.18,.07],[.28,.085],[.4,.12]]);
+ for(const [stride,limit] of limits){
+  const {keys}=generateWalk(defaultMarkers(),{stride}),cycle=keys.slice(0,-1);
+  for(let frame=0;frame<cycle.length;frame++)for(const bone of [11,12,15,16]){
+   const q=offset=>new THREE.Quaternion(...cycle[(frame+offset+cycle.length)%cycle.length].pose[bone].q);
+   const acceleration=2*q(0).angleTo(q(-1).slerp(q(1),.5));
+   assert.ok(acceleration<limit,`stride ${stride}, bone ${bone}, frame ${frame}: ${acceleration}`);
+  }
+ }
+});
+
+test('flat-foot crossing preserves ankle velocity after heel/toe contact correction',()=>{
+ const points=defaultMarkers(),L=.85,toe=points[14].clone().sub(points[13]),X=new THREE.Vector3(1,0,0);
+ let low=.6,high=1;
+ for(let i=0;i<50;i++){const t=(low+high)/2;if(footTrajectory(t,L,.12).pitch>0)low=t;else high=t;}
+ const crossing=(low+high)/2,h=1e-5;
+ const height=t=>{const m=footTrajectory(t,L,.12),rolled=toe.clone().applyAxisAngle(X,m.pitch);return m.lift+Math.max(0,toe.y-rolled.y);};
+ const a=height(crossing-h),b=height(crossing),c=height(crossing+h);
+ assert.ok(Math.abs((c-b)/h-(b-a)/h)<.003,'contact correction introduced a vertical kick');
+});

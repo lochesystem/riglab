@@ -59,3 +59,9 @@ A caminhada agora compartilha o solver de pernas da corrida: plano de flexão es
 O quadril faz uma transferência lateral discreta para o lado de apoio, com contrarrotação de peito e compensação da cabeça. A caminhada mantém 60% de apoio por pé, intervalos de apoio duplo, elevação baixa dos pés e inclinação anterior moderada. O ciclo não tem fase aérea. Mantidas a continuidade das trajetórias, as durações e as opções de tamanho de passo.
 
 Verificação: demonstrador de frente e perfil em poses do ciclo; testes em três larguras de rig e dois comprimentos de passo, cobrindo apoio contínuo, ausência de cruzamento dos pés, direção dos joelhos, contrarrotação e ausência de saltos entre frames. Gere a caminhada novamente para aplicar as mudanças a um projeto existente.
+
+## Caminhada: continuidade nas correções de apoio
+
+O limitador de alcance do quadril usava um mínimo rígido entre a altura desejada e o alcance de cada perna. Ao trocar a restrição ativa, a altura mudava de velocidade perto da extensão máxima do joelho. A caminhada agora usa um mínimo suave conservador, com margem de extensão de 0,6%, preservando apoio e comprimento dos ossos. Os valores padrão do solver para idle e corrida permanecem iguais.
+
+A rolagem do pé também desacelera suavemente ao passar pela orientação plana: isso evita que a correção vertical por contato de calcanhar/ponta introduza um salto de velocidade. Novas regressões medem a segunda diferença angular dos joelhos, inclusive na emenda do ciclo, e a continuidade vertical do tornozelo após a correção de contato. No rig padrão com passo médio, o pico da segunda diferença angular do joelho caiu de 0,1195 para 0,0726 rad por frame², aproximadamente 39%. Esse indicador mede a suavidade numérica; a percepção final também depende da malha e dos pesos.
