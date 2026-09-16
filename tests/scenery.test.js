@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import {estimateTravelSpeed,wrapScenery,createScenery} from '../src/scenery.js';
+import {defaultMarkers} from '../src/rig.js';
+import {generateWalk} from '../src/walk.js';
+import {generateRun,generateIdle} from '../src/motion.js';
+test('scenery speed follows foot support, cadence and idle without mutating clips',()=>{const points=defaultMarkers(),walk=generateWalk(points),run=generateRun(points),idle=generateIdle(points),before=JSON.stringify(walk);const speed=estimateTravelSpeed(walk.keys,walk.duration);assert.ok(speed>.2&&speed<.6);assert.ok(estimateTravelSpeed(run.keys,run.duration)>speed*2);assert.equal(estimateTravelSpeed(idle.keys,idle.duration),0);assert.equal(estimateTravelSpeed([],3),0);const fast=generateWalk(points,{speed:2});assert.ok(Math.abs(estimateTravelSpeed(fast.keys,fast.duration)/speed-2)<.2);assert.equal(JSON.stringify(walk),before);});
+test('infinite segments keep their spacing across wraps and freeze when paused',()=>{for(const distance of [0,3.99,4,55.9,56,56000.1]){const z=Array.from({length:7},(_,i)=>wrapScenery((i-3)*8,distance)).sort((a,b)=>a-b);for(let i=1;i<z.length;i++)assert.ok(Math.abs(z[i]-z[i-1]-8)<1e-8);}const scene=new THREE.Scene(),scenery=createScenery(scene),model=new THREE.Group();scenery.setMode('forest');const count=scenery.root.children.length;scenery.update(2,1,model);assert.equal(scenery.distance,2);scenery.update(0,1,model);assert.equal(scenery.distance,2);scenery.update(5,0,model);assert.equal(scenery.distance,2);for(let i=0;i<1000;i++)scenery.update(.1,3,model);assert.equal(scenery.root.children.length,count);scenery.setMode('studio');assert.equal(scenery.root.visible,false);scenery.reset();assert.equal(scenery.distance,0);});

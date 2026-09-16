@@ -1,0 +1,34 @@
+import {test,expect} from '@playwright/test';
+import fs from 'node:fs/promises';
+
+test('scenery follows looping locomotion, freezes on pause and idle, and stays out of export',async({page},testInfo)=>{
+ await page.goto('/');
+ await page.locator('#auto-rig').click();
+ await page.waitForFunction(()=>window.riglabDiagnostics().rigged);
+ await page.getByRole('tab',{name:'Animações',exact:true}).click();
+ await page.locator('#walk').click();
+ const original=await page.evaluate(()=>window.riglabDiagnostics());
+ await page.locator('#preview-scenario').selectOption('forest');
+ await expect(page.locator('#environment-name')).toHaveText('Floresta');
+ const preview=await page.evaluate(()=>window.riglabDiagnostics());
+ expect(preview.pose).toEqual(original.pose);expect(preview.global).toEqual(original.global);
+ await page.locator('#play').click();
+ await expect.poll(()=>page.evaluate(()=>window.riglabDiagnostics().scenery.distance),{timeout:20000}).toBeGreaterThan(.5);
+ await page.locator('#play').click();
+ const paused=await page.evaluate(()=>window.riglabDiagnostics().scenery.distance);
+ await page.waitForTimeout(250);
+ expect(await page.evaluate(()=>window.riglabDiagnostics().scenery.distance)).toBe(paused);
+ await page.locator('#rewind').click();
+ expect(await page.evaluate(()=>window.riglabDiagnostics().scenery.distance)).toBe(0);
+ const downloadPromise=page.waitForEvent('download');await page.locator('#export').click();
+ const file=testInfo.outputPath('scenery-preview.glb');await (await downloadPromise).saveAs(file);
+ const buffer=await fs.readFile(file),json=JSON.parse(buffer.subarray(20,20+buffer.readUInt32LE(12)).toString());
+ expect(json.skins.length).toBeGreaterThan(0);expect(json.nodes.some(n=>n.name==='PreviewScenery')).toBe(false);
+ await page.locator('#animation-kind').selectOption('idle');await page.locator('#idle').click();
+ await page.locator('#play').click();
+ await expect.poll(()=>page.evaluate(()=>window.riglabDiagnostics().time)).toBeGreaterThan(.2);
+ expect(await page.evaluate(()=>window.riglabDiagnostics().scenery.distance)).toBe(0);
+ await page.locator('#play').click();
+ await page.locator('#preview-scenario').selectOption('road');await expect(page.locator('#environment-name')).toHaveText('Estrada');
+ await page.locator('#preview-scenario').selectOption('studio');await expect(page.locator('#scenery-speed-field')).toBeHidden();
+});
