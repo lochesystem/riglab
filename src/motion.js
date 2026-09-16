@@ -166,3 +166,32 @@ export function generateRun(points,{speed=1,stride=.55,intensity=1}={}){
   }
  });
 }
+
+// A standing jump: planted anticipation, a ballistic flight arc, then an
+// absorbing landing. Both feet share contact times; IK preserves limb lengths.
+export function generateJump(points,{intensity=1,speed=1}={}){
+ intensity=finite(intensity,1,.6,1.4);speed=finite(speed,1,.8,1.25);
+ const rig=createMotionRig(points),{bones:b,length:L,feet,footTarget,arm}=rig;
+ const takeoff=.32,landing=.66,height=.32*intensity,flight=landing-takeoff;
+ const velocity=4*height/flight;
+ return bake(rig,1.8/speed,'Pulo',phase=>{
+  const airborne=phase>takeoff&&phase<landing;
+  const u=THREE.MathUtils.clamp((phase-takeoff)/flight,0,1);
+  const lift=airborne?4*height*u*(1-u):0,tuck=Math.sin(Math.PI*u)**2;
+  const hip=phase<=takeoff?runCurve(phase,[[0,-.035,0],[.1,-.035,0],[.23,-.24*intensity,0],[takeoff,-.035,velocity]]):phase<landing?-.035+lift:runCurve(phase,[[landing,-.035,-velocity],[.77,-.22*intensity,0],[.96,-.035,0],[1,-.035,0]]);
+  const crouch=idleGesture(phase,.07,.23,.23,.34),absorb=idleGesture(phase,.64,.77,.77,.97);
+  b[0].position.y+=L*hip;
+  b[0].position.z-=L*(.06*crouch+.04*absorb);
+  b[0].rotation.x=.06+.17*crouch+.14*absorb;
+  b[1].rotation.x=.06*crouch+.04*absorb;
+  b[2].rotation.x=-.03-.04*tuck;
+  b[3].rotation.x=-.02;
+  b[4].rotation.x=-.04-.11*crouch-.09*absorb;
+  feet([11,15].map(index=>{
+   const target=footTarget(index,-L*.10*tuck,L*(lift+.09*tuck),.22*Math.sin(Math.PI*u));
+   target.kneePole=new THREE.Vector3(0,0,1);return target;
+  }));
+  const throwArms=idleGesture(phase,.23,.39,.48,.76);
+  for(const [index,sign] of [[5,1],[8,-1]])arm(index,sign,.45*crouch-1.85*throwArms-.18*absorb,.18+.3*throwArms+.18*absorb,0,.10);
+ });
+}

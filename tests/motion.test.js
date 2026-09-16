@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {defaultMarkers,buildSkeleton,applyPose,makeClip} from '../src/rig.js';
-import {generateIdle,generateRun,runFootTrajectory} from '../src/motion.js';
+import {generateIdle,generateRun,generateJump,runFootTrajectory} from '../src/motion.js';
 
-for(const [name,generate] of [['idle',generateIdle],['running',generateRun]])test(`${name}: finite normalized rotations, fixed lengths, closed exportable loops on A/T poses`,()=>{
+for(const [name,generate] of [['idle',generateIdle],['running',generateRun],['jump',generateJump]])test(`${name}: finite normalized rotations, fixed lengths, closed exportable loops on A/T poses`,()=>{
  for(const type of ['A','T'])for(const intensity of [.6,1.4]){
  const points=defaultMarkers(2,type),result=generate(points,{intensity,speed:1.25}),skeleton=buildSkeleton(points);
  assert.deepEqual(result.keys[0].pose,result.keys.at(-1).pose);
@@ -71,4 +71,20 @@ test('running narrows foot tracks independently of bind stance and coordinates t
   }
   applyPose(rig,result.keys[0].pose);const hipYaw=new THREE.Euler().setFromQuaternion(rig.bones[0].getWorldQuaternion(new THREE.Quaternion())).y,torsoYaw=new THREE.Euler().setFromQuaternion(rig.bones[2].getWorldQuaternion(new THREE.Quaternion())).y;assert.ok(hipYaw*torsoYaw<0,'pelvis and chest counter-rotate');rig.dispose();
  }
+});
+
+test('jump plants both feet, clears the floor together and absorbs landing',()=>{
+ const points=defaultMarkers(),skeleton=buildSkeleton(points),{keys,duration}=generateJump(points);
+ let flight=0,anticipation=Infinity,landing=Infinity,apex=-Infinity;
+ for(const key of keys){
+  applyPose(skeleton,key.pose);const phase=key.time/duration;
+  const a=skeleton.bones[13].getWorldPosition(new THREE.Vector3()),b=skeleton.bones[17].getWorldPosition(new THREE.Vector3());
+  assert.ok(Math.abs((a.y-points[13].y)-(b.y-points[17].y))<1e-5);
+  if(phase<=.32||phase>=.66){assert.ok(a.distanceTo(points[13])<1e-5);assert.ok(b.distanceTo(points[17])<1e-5);}
+  if(a.y>points[13].y+.1&&b.y>points[17].y+.1)flight++;
+  if(phase<.32)anticipation=Math.min(anticipation,key.pose[0].p[1]);
+  if(phase>.66)landing=Math.min(landing,key.pose[0].p[1]);
+  apex=Math.max(apex,key.pose[0].p[1]);
+ }
+ assert.ok(flight>=8);assert.ok(anticipation<keys[0].pose[0].p[1]-.1);assert.ok(landing<keys[0].pose[0].p[1]-.1);assert.ok(apex>keys[0].pose[0].p[1]+.15);
 });

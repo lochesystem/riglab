@@ -12,12 +12,12 @@ export function setupInspector(onTabChange){
  host.append(tabs,...Object.values(pages));
  const poseNodes=[host.querySelector('h3'),host.querySelector('.segmented'),$('#neutral'),$('#wave'),$('#edit-rig')];pages.pose.append(...poseNodes);
  const walk=$('#walk').closest('.walk-generator'),motion=$('#idle').closest('.walk-generator');
- const choice=document.createElement('label');choice.className='motion-choice';choice.innerHTML='Animação<select id="animation-kind" aria-label="Tipo de animação"><option value="walk">Caminhada</option><option value="idle">Idle · em espera</option><option value="run">Corrida</option></select>';
+ const choice=document.createElement('label');choice.className='motion-choice';choice.innerHTML='Animação<select id="animation-kind" aria-label="Tipo de animação"><option value="walk">Caminhada</option><option value="idle">Idle · em espera</option><option value="run">Corrida</option><option value="jump">Pulo</option></select>';
  pages.animation.append(choice,walk,motion);
  walk.querySelector('h3').remove();motion.querySelector('h3').remove();
  walk.querySelector('p').textContent='Substitui o clipe · Desfazer recupera';
  const description=motion.querySelector('p');
- function selectMotion(){const kind=choice.querySelector('select').value;walk.hidden=kind!=='walk';motion.hidden=kind==='walk';$('#idle').hidden=kind!=='idle';$('#run').hidden=kind!=='run';description.textContent='Substitui o clipe · Desfazer recupera';}
+ function selectMotion(){const kind=choice.querySelector('select').value;walk.hidden=kind!=='walk';motion.hidden=kind==='walk';$('#idle').hidden=kind!=='idle';$('#run').hidden=kind!=='run';$('#jump').hidden=kind!=='jump';description.textContent='Substitui o clipe · Desfazer recupera';}
  choice.querySelector('select').onchange=selectMotion;selectMotion();
  const painting=$('#paint-toggle').closest('.walk-generator'),refine=$('#refine-weights'),refineHelp=refine.nextElementSibling;
  pages.weights.append(painting);
