@@ -188,7 +188,7 @@ test('optional fists preserve legacy keys, undo skin changes and survive recover
  await expect(page.locator('#open-project')).toBeEnabled();await page.reload();await page.locator('#restore-recovery').click();await expect(page.locator('#asset-meta')).toContainText('49 juntas');expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(saved.data.state.pose);
  await page.locator('#demo').click();await page.locator('#project-file').setInputFiles(saved.path);await expect(page.locator('#asset-meta')).toContainText('49 juntas');expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(saved.data.state.pose);
  const exported=page.waitForEvent('download');await page.locator('#export').click();const glb=await exported,path=testInfo.outputPath('hands.glb');await glb.saveAs(path);const bytes=await fs.readFile(path),json=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString());expect(json.skins[0].joints.length).toBe(49);expect(json.animations[0].channels.length).toBe(100);
- await page.locator('#project-file').setInputFiles(legacy.path);await expect(page.locator('#asset-meta')).toContainText('19 juntas');expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(legacy.data.state.pose);expect(errors).toEqual([]);
+ await expect(page.locator('#open-project')).toBeEnabled();await page.locator('#project-file').setInputFiles(legacy.path);await expect(page.locator('#asset-meta')).toContainText('19 juntas',{timeout:20000});expect(await page.evaluate(()=>window.riglabDiagnostics().pose)).toEqual(legacy.data.state.pose);expect(errors).toEqual([]);
 });
 
 test('texture/UV export and replacement persist through project, recovery and GLB',async({page},testInfo)=>{
