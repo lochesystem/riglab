@@ -195,3 +195,38 @@ export function generateJump(points,{intensity=1,speed=1}={}){
   for(const [index,sign] of [[5,1],[8,-1]])arm(index,sign,.45*crouch-1.85*throwArms-.18*absorb,.18+.3*throwArms+.18*absorb,0,.10);
  });
 }
+
+// Alternating straight punches. The non-striking hand stays in guard, while
+// the pelvis leads the chest by a few frames and the arm retracts more slowly.
+export function generatePunch(points,{hits=1,intensity=1,speed=1}={}){
+ intensity=finite(intensity,1,.6,1.4);speed=finite(speed,1,.8,1.25);
+ const combo=hits===3,duration=combo?2.2:1.25;
+ const strikes=combo?[[.38,1],[.88,-1],[1.40,1]]:[[.42,1]];
+ const rig=createMotionRig(points),{bones:b,length:L,feet,footTarget,arm}=rig;
+ return bake(rig,duration/speed,combo?'Combo — 3 socos':'Ataque — 1 soco',phase=>{
+  const time=phase*duration;
+  const pulse=(peak,offset=0)=>idleGesture(time,peak-.17+offset,peak+offset,peak+.025+offset,peak+.30+offset);
+  let turn=0,hipTurn=0,drive=0,left=0,right=0,wind=0;
+  for(const [peak,sign] of strikes){
+   const amount=pulse(peak);if(sign===1)left+=amount;else right+=amount;
+   turn-=sign*amount;hipTurn-=sign*pulse(peak,-.045);drive+=amount;
+   wind+=sign*idleGesture(time,peak-.30,peak-.20,peak-.18,peak-.07);
+  }
+  b[0].position.y-=L*(.065+.015*drive);
+  b[0].position.z+=L*.055*intensity*drive;
+  b[0].position.x-=L*.018*intensity*turn;
+  b[0].rotation.set(.045,-.10+.13*intensity*hipTurn+.04*wind,0);
+  b[1].rotation.set(.025*drive,.06*intensity*turn,0);
+  b[2].rotation.set(.025*drive,.14*intensity*turn+.06*wind,0);
+  b[3].rotation.y=-.04*turn;
+  b[4].rotation.set(-.04,.10-.20*intensity*turn,0);
+  feet([11,15].map((index,side)=>{
+   const target=footTarget(index,L*(side===0?.08:-.08),0,0);
+   target.kneePole=new THREE.Vector3(0,0,1);return target;
+  }));
+  const frame=b[2].getWorldQuaternion(new THREE.Quaternion());
+  for(const [index,sign,extension] of [[5,1,left],[8,-1,right]]){
+   arm(index,sign,THREE.MathUtils.lerp(-.48,-1.48,extension),THREE.MathUtils.lerp(1.95,.14,extension),0,.065,frame);
+  }
+ });
+}

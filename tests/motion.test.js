@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {defaultMarkers,buildSkeleton,applyPose,makeClip} from '../src/rig.js';
-import {generateIdle,generateRun,generateJump,runFootTrajectory} from '../src/motion.js';
+import {generateIdle,generateRun,generateJump,generatePunch,runFootTrajectory} from '../src/motion.js';
 
-for(const [name,generate] of [['idle',generateIdle],['running',generateRun],['jump',generateJump]])test(`${name}: finite normalized rotations, fixed lengths, closed exportable loops on A/T poses`,()=>{
+for(const [name,generate] of [['idle',generateIdle],['running',generateRun],['jump',generateJump],['punch',generatePunch],['combo',p=>generatePunch(p,{hits:3})]])test(`${name}: finite normalized rotations, fixed lengths, closed exportable loops on A/T poses`,()=>{
  for(const type of ['A','T'])for(const intensity of [.6,1.4]){
  const points=defaultMarkers(2,type),result=generate(points,{intensity,speed:1.25}),skeleton=buildSkeleton(points);
  assert.deepEqual(result.keys[0].pose,result.keys.at(-1).pose);
@@ -87,4 +87,23 @@ test('jump plants both feet, clears the floor together and absorbs landing',()=>
   apex=Math.max(apex,key.pose[0].p[1]);
  }
  assert.ok(flight>=8);assert.ok(anticipation<keys[0].pose[0].p[1]-.1);assert.ok(landing<keys[0].pose[0].p[1]-.1);assert.ok(apex>keys[0].pose[0].p[1]+.15);
+});
+
+test('punches have exactly one or three extensions, alternating guard and planted feet',()=>{
+ for(const hits of [1,3]){
+  const points=defaultMarkers(),skeleton=buildSkeleton(points),result=generatePunch(points,{hits});
+  const previous=[false,false],events=[];let initialFeet;
+  for(const key of result.keys){
+   applyPose(skeleton,key.pose);
+   const feet=[13,17].map(i=>skeleton.bones[i].getWorldPosition(new THREE.Vector3()));
+   initialFeet??=feet.map(p=>p.clone());feet.forEach((p,i)=>assert.ok(p.distanceTo(initialFeet[i])<1e-5));
+   const extended=[5,8].map(i=>{
+    const shoulder=skeleton.bones[i].getWorldPosition(new THREE.Vector3()),hand=skeleton.bones[i+2].getWorldPosition(new THREE.Vector3());
+    const length=points[i].distanceTo(points[i+1])+points[i+1].distanceTo(points[i+2]);return hand.z-shoulder.z>length*.80;
+   });
+   assert.ok(!extended.every(Boolean),'both hands leave guard together');
+   extended.forEach((value,i)=>{if(value&&!previous[i])events.push(i);previous[i]=value;});
+  }
+  assert.deepEqual(events,hits===3?[0,1,0]:[0]);
+ }
 });
