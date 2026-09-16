@@ -13,11 +13,12 @@ export function setupInspector(onTabChange){
  const poseNodes=[host.querySelector('h3'),host.querySelector('.segmented'),$('#neutral'),$('#wave'),$('#edit-rig')];pages.pose.append(...poseNodes);
  const walk=$('#walk').closest('.walk-generator'),motion=$('#idle').closest('.walk-generator');
  const choice=document.createElement('label');choice.className='motion-choice';choice.innerHTML='Animação<select id="animation-kind" aria-label="Tipo de animação"><option value="walk">Caminhada</option><option value="idle">Idle · em espera</option><option value="run">Corrida</option><option value="jump">Pulo</option><option value="punch">Ataque · 1 soco</option><option value="combo">Ataque · 3 socos</option></select>';
- pages.animation.append(choice,walk,motion);
+ const library=document.createElement('div');library.className='clip-library';library.innerHTML='<h3>Animações do projeto</h3><select id="clip-select" aria-label="Animação ativa"></select><input id="clip-name" aria-label="Nome da animação" maxlength="80"/><div class="clip-actions"><button id="clip-new">Nova</button><button id="clip-duplicate">Duplicar</button><button id="clip-delete">Excluir</button></div><p class="muted">Cada animação tem sua timeline. O GLB exporta todas.</p>';
+ pages.animation.append(library,choice,walk,motion);
  walk.querySelector('h3').remove();motion.querySelector('h3').remove();
- walk.querySelector('p').textContent='Substitui o clipe · Desfazer recupera';
+ walk.querySelector('p').textContent='Cria uma nova animação · Preserva as anteriores';
  const description=motion.querySelector('p');
- function selectMotion(){const kind=choice.querySelector('select').value;walk.hidden=kind!=='walk';motion.hidden=kind==='walk';$('#idle').hidden=kind!=='idle';$('#run').hidden=kind!=='run';$('#jump').hidden=kind!=='jump';$('#punch').hidden=kind!=='punch';$('#combo').hidden=kind!=='combo';description.textContent='Substitui o clipe · Desfazer recupera';}
+ function selectMotion(){const kind=choice.querySelector('select').value;walk.hidden=kind!=='walk';motion.hidden=kind==='walk';$('#idle').hidden=kind!=='idle';$('#run').hidden=kind!=='run';$('#jump').hidden=kind!=='jump';$('#punch').hidden=kind!=='punch';$('#combo').hidden=kind!=='combo';description.textContent='Cria uma nova animação · Preserva as anteriores';}
  choice.querySelector('select').onchange=selectMotion;selectMotion();
  const painting=$('#paint-toggle').closest('.walk-generator'),refine=$('#refine-weights'),refineHelp=refine.nextElementSibling;
  pages.weights.append(painting);

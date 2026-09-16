@@ -64,3 +64,5 @@
 #textures-dialog [hidden]{display:none!important}
 
 .scenery-controls{position:absolute;left:20px;bottom:64px;display:flex;gap:12px;align-items:center;background:#202728ed;border:1px solid #475250;border-radius:8px;padding:10px 12px;font-size:11px}.scenery-controls[hidden],.scenery-controls [hidden]{display:none!important}.scenery-controls label{display:flex;gap:8px;align-items:center}.scenery-controls select{padding:6px}.scenery-controls input{width:90px;padding:0;accent-color:var(--lime)}.scenery-controls output{min-width:64px;font-variant-numeric:tabular-nums}
+
+.clip-library{display:grid;gap:8px;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--border)}.clip-library h3{font-size:11px;text-transform:uppercase;letter-spacing:1px}.clip-library select,.clip-library input{width:100%;min-width:0}.clip-actions{display:flex;gap:5px}.clip-actions button{flex:1;padding:8px 4px;font-size:11px}
