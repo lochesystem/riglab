@@ -1,3 +1,4 @@
+import {createGLBViewer} from './viewer.js';
 import {newClip,uniqueClipName,validateClips} from './clips.js';
 import {createScenery,estimateTravelSpeed} from './scenery.js';
 import {createTexturesPanel} from './textures-panel.js';
@@ -24,7 +25,7 @@ const icon=name=>`<i data-lucide="${name}"></i>`;
 const refs=[['01-cavaleiro-cristal','Cavaleiro de cristal'],['02-elfa-floresta','Elfa da floresta'],['03-orc-aventureiro','Orc aventureiro'],['04-maga-lunar','Maga lunar'],['05-guardia-brasa','Guardiã da brasa']];
 $('#app').innerHTML=`
 <div class="app-shell">
-<header class="topbar"><div class="brand"><span class="brand-mark">${icon('bone')}</span>riglab<span class="badge">PROTOTYPE</span></div><div class="project-name">Estúdio / <strong id="project-title">Sentinela da floresta</strong></div><div class="top-actions"><button id="undo" title="Desfazer (Ctrl/⌘ Z)" aria-label="Desfazer">${icon('undo-2')}</button><button id="redo" title="Refazer (Ctrl/⌘ Shift Z)" aria-label="Refazer">${icon('redo-2')}</button><button id="open-project">${icon('folder-open')}Abrir projeto</button><button id="save-project">${icon('save')}Salvar</button><button class="primary" id="export">${icon('arrow-up-right')}Exportar GLB</button></div></header>
+<header class="topbar"><div class="brand"><span class="brand-mark">${icon('bone')}</span>riglab<span class="badge">PROTOTYPE</span></div><div class="project-name">Estúdio / <strong id="project-title">Sentinela da floresta</strong></div><div class="top-actions"><button id="open-viewer">Visualizador GLB</button><button id="undo" title="Desfazer (Ctrl/⌘ Z)" aria-label="Desfazer">${icon('undo-2')}</button><button id="redo" title="Refazer (Ctrl/⌘ Shift Z)" aria-label="Refazer">${icon('redo-2')}</button><button id="open-project">${icon('folder-open')}Abrir projeto</button><button id="save-project">${icon('save')}Salvar</button><button class="primary" id="export">${icon('arrow-up-right')}Exportar GLB</button></div></header>
 <nav class="workflow" aria-label="Etapas"><button class="step" data-stage="import"><span>1</span>Modelo</button>${icon('chevron-right')}<button class="step active" data-stage="rig"><span>2</span>Rigging</button>${icon('chevron-right')}<button class="step" data-stage="animate"><span>3</span>Animação</button><div class="note"><i class="dot"></i>Arquivos processados neste navegador</div></nav>
 <main class="workspace"><aside class="panel left-panel">
 <section class="panel-section"><h2 class="section-title">Cena <b>01</b></h2><div class="asset-card"><div class="asset-icon">${icon('person-standing')}</div><div><strong id="asset-name">Sentinela da floresta</strong><small id="asset-meta">Humanoide · malha de demonstração</small></div></div><button id="import" class="wide">${icon('upload')}Importar modelo GLB</button><button id="textures" class="wide">Texturas e UV</button><button id="demo" class="wide subtle">${icon('box')}Carregar demonstração</button></section>
@@ -386,6 +387,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)autosave();
 window.addEventListener('beforeunload',e=>{if(!recoveryPending&&revision!==recoveryRevision){e.preventDefault();e.returnValue='';}});
 
 
+const glbViewer=createGLBViewer();$('#open-viewer').onclick=()=>{state.playing=false;updateUI();glbViewer.open();};
 $('#auto-rig').onclick=generateRig;$('#refine-weights').onclick=refineWeights;$('#import').onclick=()=>$('#model-file').click();$('#model-file').onchange=e=>importFile(e.target.files[0]);$('#demo').onclick=()=>{if(!state.busy)loadAsset(normalize(createDemo()),'Sentinela da floresta','demo');};$('#open-project').onclick=()=>$('#project-file').click();$('#project-file').onchange=e=>openProject(e.target.files[0]);$('#save-project').onclick=saveProject;$('#export').onclick=exportGLB;
 $$('[data-stage]').forEach(b=>b.onclick=()=>setStage(b.dataset.stage));$('#start-rig').onclick=()=>setStage('rig');$('#edit-rig').onclick=()=>{setStage('rig');toast('Ao gerar novamente, o rig e o clipe serão substituídos.');};
 $('#global-control').onclick=()=>{state.globalSelected=true;state.painting=false;state.showWeights=false;state.playing=false;updateUI();};
