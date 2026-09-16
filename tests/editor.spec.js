@@ -66,6 +66,8 @@ test('move mode preserves selection and knee movement propagates through the bod
 });
 
 test('idle and running generate, preview, export and restore editable motion',async({page},testInfo)=>{
+ // The project now retains the long idle clip alongside running for round-trip export.
+ test.setTimeout(180000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/',{waitUntil:'domcontentloaded'});await page.locator('#auto-rig').click();await page.waitForFunction(()=>window.riglabDiagnostics().rigged);
  await page.getByRole('tab',{name:'Animações',exact:true}).click();await page.locator('#animation-kind').selectOption('idle');await page.locator('#idle').click();expect((await page.evaluate(()=>window.riglabDiagnostics())).keyframes).toBe(481);await expect(page.locator('#duration')).toHaveValue('16');
  await page.locator('#skeleton-toggle').click();await page.locator('#viewport').screenshot({path:testInfo.outputPath('idle.png')});
